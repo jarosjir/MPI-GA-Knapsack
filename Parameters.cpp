@@ -1,30 +1,35 @@
-/* 
- * File:        Parameters.cpp
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file:       Parameters.cpp
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Implementation file of the parameter class. 
- *              This class maintains all the parameters of evolution.
+ * 
+ * @brief 	Implementation of the calss that maintains all the parameters of evolution.
+ *              
  *
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section	License
+ *		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
  * 
- * Created on 30 March 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+		20 September 2012, 15:15 (revised)
  */
+
 
 
 #include <iostream>
@@ -41,8 +46,9 @@
 //----------------------------------------------------------------------------//
 
 
-// Singleton initialization 
+
 bool TParameters::pTParametersInstanceFlag = false;
+
 TParameters* TParameters::pTParametersSingle = NULL;
 
 
@@ -51,8 +57,9 @@ TParameters* TParameters::pTParametersSingle = NULL;
 //                              public methods                                //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Get instance of TPrarams
+ * @return the instance of the class
  */
 TParameters* TParameters::GetInstance(){
     if(! pTParametersInstanceFlag)
@@ -69,14 +76,15 @@ TParameters* TParameters::GetInstance(){
 //-----------------------------------------------------------------------------
 
 
-/*
+/**
  * Load parameters from command line
  * 
- * @param argc
- * @param argv
+ * @param [in] argc
+ * @param [in] argv
  * 
  */
-void TParameters::LoadParametersFromCommandLine(int argc, char **argv){
+void TParameters::LoadParametersFromCommandLine(int argc, char **argv)
+{
        
    // default values
    float OffspringPercentage = 0.5f;
@@ -183,10 +191,11 @@ void TParameters::LoadParametersFromCommandLine(int argc, char **argv){
 //                              private methods                               //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Constructor
  */
-TParameters::TParameters(){
+TParameters::TParameters()
+{
     
     EvolutionParameters.PopulationSize      = 128;
     EvolutionParameters.ChromosomeSize      = 128;
@@ -208,10 +217,11 @@ TParameters::TParameters(){
 }// end of TParameters
 //------------------------------------------------------------------------------
 
-/*
- * print usage of the algorithm
+/**
+ * Print usage of the algorithm
  */
-void TParameters::PrintUsageAndExit(){
+void TParameters::PrintUsageAndExit()
+{
  
   if (EvolutionParameters.IslandIdx == 0){
       cerr << "Usage: " << endl;  
@@ -260,11 +270,12 @@ void TParameters::PrintUsageAndExit(){
 
 
 
-/*
+/**
  * Print all parameters
  * 
  */
-void TParameters::PrintAllParameters(){
+void TParameters::PrintAllParameters()
+{
    
     if (EvolutionParameters.IslandIdx == 0){
         printf("-----------------------------------------\n");

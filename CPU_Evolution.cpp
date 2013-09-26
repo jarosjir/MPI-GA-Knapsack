@@ -1,30 +1,35 @@
-/* 
- * File:        CPU_Evolution.cpp
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file:       CPU_Evolution.cpp
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Implementation file of the GA evolution
- *              This class controls the evolution process on multicore CPU
+ * 
+ * @brief 	Implementaion of the island based GA
+ *              
  *
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section	License
+ *		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
  * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+		26 September 2013, 11:10 (revised)
  */
+ 
 
 
 #include <iostream>
@@ -43,8 +48,16 @@
 using namespace std;
 using namespace r123;
 
-
+/**
+  * @typedef RNG_4x32
+  * @brief four 32b values given by the Philox random generator
+  */
 typedef r123::Philox4x32 RNG_4x32;
+
+/**
+  * @typedef RNG_2x32
+  * @brief two 32b values given by the Philox random generator
+  */
 typedef r123::Philox2x32 RNG_2x32;
 
 
@@ -53,8 +66,9 @@ typedef r123::Philox2x32 RNG_2x32;
 //                              Definitions                                   //
 //----------------------------------------------------------------------------//
 
-
+/// MPI tag for sending data on the ring to the left
 const int MPI_TAG_DATA_LEFT  = 100;
+/// MPI tag for sending data on the ring to the right
 const int MPI_TAG_DATA_RIGHT = 101;
 
 //----------------------------------------------------------------------------//
@@ -62,13 +76,14 @@ const int MPI_TAG_DATA_RIGHT = 101;
 //                              public methods                                //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Constructor of the class
  * 
- * @param argc
- * @param argv
+ * @param [in] argc
+ * @param [in] argv
  */
-TCPU_Evolution::TCPU_Evolution(int argc, char **argv){
+TCPU_Evolution::TCPU_Evolution(int argc, char **argv)
+{
         
     // Create parameters    
     Params  = TParameters::GetInstance();
@@ -97,10 +112,11 @@ TCPU_Evolution::TCPU_Evolution(int argc, char **argv){
 //------------------------------------------------------------------------------
   
 
-/*
+/**
  * Destructor of the class
  */
-TCPU_Evolution::~TCPU_Evolution(){
+TCPU_Evolution::~TCPU_Evolution()
+{
     
     delete MasterPopulation;    
     delete OffspringPopulation;
@@ -113,10 +129,11 @@ TCPU_Evolution::~TCPU_Evolution(){
 }// end of Destructor
 //------------------------------------------------------------------------------
 
-/*
+/**
  * Run Evolution
  */
-void TCPU_Evolution::Run(){
+void TCPU_Evolution::Run()
+{
     
     Initialize();
     
@@ -131,10 +148,11 @@ void TCPU_Evolution::Run(){
 //                              protected methods                             //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Initialization evolution
  */
-void TCPU_Evolution::Initialize(){
+void TCPU_Evolution::Initialize()
+{
             
    ActGeneration = 0;
       
@@ -146,10 +164,12 @@ void TCPU_Evolution::Initialize(){
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Get seed for random generator 
+ * return seed for r123 generator
  */
-r123_seed TCPU_Evolution::GetSeed() {                
+r123_seed TCPU_Evolution::GetSeed() 
+{                
       
   struct r123_seed seed;
   struct timeval tp1;  
@@ -167,10 +187,11 @@ r123_seed TCPU_Evolution::GetSeed() {
 
 
 
-/*
+/**
  * Generate first population
  */
-void TCPU_Evolution::GenerateFirstPopulation(){
+void TCPU_Evolution::GenerateFirstPopulation()
+{
   
    const int PopulationDim = MasterPopulation->ChromosomeSize * MasterPopulation->PopulationSize;
 
@@ -218,11 +239,12 @@ void TCPU_Evolution::GenerateFirstPopulation(){
 
 
 
-/*
+/**
  * Run evolutionary cycle for defined number of generations
  * 
  */
-void TCPU_Evolution::RunEvolutionCycle(){
+void TCPU_Evolution::RunEvolutionCycle()
+{
     
     // Execute N generations
     for (ActGeneration = 1; ActGeneration < Params->NumOfGenerations(); ActGeneration++) {
@@ -278,11 +300,12 @@ void TCPU_Evolution::RunEvolutionCycle(){
 }// end of RunEvolutionCycle
 //------------------------------------------------------------------------------
     
-/*
+/**
  * Genetic manipulation
  * 
  */    
-void TCPU_Evolution::GeneticManipulation(){
+void TCPU_Evolution::GeneticManipulation()
+{
     
     
     const TParameters * Params = TParameters::GetInstance();
@@ -398,16 +421,17 @@ void TCPU_Evolution::GeneticManipulation(){
 
 
 
-/*
+/**
  * Binary tournament selection
  * 
- * @param ParentData - Parent Population
- * @param Random 1   - Frist Random value
- * @param Random 2   - Second Random value 
+ * @param [in] ParentsData - Parent Population
+ * @param [in] Random1   - Frist Random value
+ * @param [in] Random2   - Second Random value 
  * 
  * @return Selected chrromosome idx
  */
-unsigned int TCPU_Evolution::Selection(TCPU_Population * ParentsData, unsigned int Random1, unsigned int Random2){
+unsigned int TCPU_Evolution::Selection(const TCPU_Population * ParentsData, const unsigned int Random1, const unsigned int Random2)
+{
             
     unsigned int Idx1 = Random1 % (ParentsData->PopulationSize);
     unsigned int Idx2 = Random2 % (ParentsData->PopulationSize);
@@ -417,18 +441,19 @@ unsigned int TCPU_Evolution::Selection(TCPU_Population * ParentsData, unsigned i
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Flip bites of parents to produce parents
  * 
- * @param  Offspring1
- * @param  Offspring2
- * @param  Parent1
- * @param  Parent2
- * @param  BitMask
+ * @param [out] GeneOffspring1
+ * @param [out] GeneOffspring2
+ * @param [in] GeneParent1
+ * @param [in] GeneParent2
+ * @param [in] RandomValue
  */
 void TCPU_Evolution::CrossoverUniformFlip(TGene& GeneOffspring1, TGene& GeneOffspring2,
-                                          TGene& GeneParent1   , TGene& GeneParent2,
-                                          unsigned int RandomValue){
+                                          const TGene& GeneParent1, const TGene& GeneParent2,
+                                          const unsigned int RandomValue)
+{
 
     GeneOffspring1 =  (~RandomValue  & GeneParent1) | ( RandomValue  & GeneParent2);
     GeneOffspring2 =  ( RandomValue  & GeneParent1) | (~RandomValue  & GeneParent2);
@@ -447,18 +472,19 @@ void TCPU_Evolution::CrossoverUniformFlip(TGene& GeneOffspring1, TGene& GeneOffs
 
 
 
-/*
+/**
  * Bit Flip Mutation
  * 
- * @param  Offspring1
- * @param  Offspring2
- * @param  Random Value 1
- * @param  Random Value 2
- * @param  Bit to mutate
+ * @param [in,out] GeneOffspring1
+ * @param [in,out] GeneOffspring2
+ * @param [in] RandomValue1
+ * @param [in] RandomValue2
+ * @param [in] BitID 
  * 
  */
  void TCPU_Evolution::MutationBitFlip(TGene& GeneOffspring1, TGene& GeneOffspring2,
-                                      unsigned int RandomValue1,unsigned int RandomValue2, int BitID){
+                                      const unsigned int RandomValue1, const unsigned int RandomValue2, const int BitID)
+{
 
  static TParameters * Params = TParameters::GetInstance();    
   
@@ -473,11 +499,12 @@ void TCPU_Evolution::CrossoverUniformFlip(TGene& GeneOffspring1, TGene& GeneOffs
 }// end of MutationBitFlip
 //------------------------------------------------------------------------------
             
-/*
+/**
  * Replacement kernel
  * 
  */
-void TCPU_Evolution::Replacement(){
+void TCPU_Evolution::Replacement()
+{
    
     TParameters * Params = TParameters::GetInstance();
     
@@ -519,10 +546,11 @@ void TCPU_Evolution::Replacement(){
 }// end of Replacement()
 //------------------------------------------------------------------------------
 
-/*
+/**
  * Unidirectional migration
  */
-void TCPU_Evolution::Migrate(){
+void TCPU_Evolution::Migrate()
+{
   
   // Four messages running in parallel  
   static const int NumOfMessages = 4;  
@@ -558,11 +586,12 @@ void TCPU_Evolution::Migrate(){
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Create Population to send
  * 
  */
-void TCPU_Evolution::PackEmigrantsToSend(){
+void TCPU_Evolution::PackEmigrantsToSend()
+{
 
     CPUStatistics->SetBestLocalIndividualAndMaxFintess(MasterPopulation);
     
@@ -605,14 +634,12 @@ void TCPU_Evolution::PackEmigrantsToSend(){
 //------------------------------------------------------------------------------
     
 
-/*
+/**
  * Include Received population 
  * 
  */
-void TCPU_Evolution::UnpackReceivedEmigrants(){
-    
-    
-    
+void TCPU_Evolution::UnpackReceivedEmigrants()
+{    
     //-- other emigrants --//
     RNG_4x32  rng_4x32;    
     RNG_4x32::key_type key    ={{Params->IslandIdx(),0xaacc8844}};

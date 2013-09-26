@@ -1,29 +1,29 @@
-/* 
- * File:        GlobalKnapsackData.h
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/** 
+ * @file        GlobalKnapsackData.h
+ * @author      Jiri Jaros
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Header file of the knapsack global data class. 
- *              This class maintains the benchmark data
- *
- * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ *  
+ * @brief       Header file of the knapsack global data class. 
+ *              
+ * @section     This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
- * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+ *		26 September 2013, 09:50 (revised)
  */
 
 
@@ -32,45 +32,59 @@
 
 
 
-
+/**
+ * @typedef  TPriceType
+ * @brief Datatype for Knapsack item price
+*/
 typedef int TPriceType;
+
+/**
+ * @typedef  TWeightType
+ * @brief    Datatype for Knapsack item weight
+*/
 typedef int TWeightType;
 
-/*
- * GLobal data for Knapsack Benchmark
+
+/**
+ * @class TGlobalKnapsackData
+ * @brief Global data for Knapsack Benchmark
  */
 class TGlobalKnapsackData{        
 public:        
-    int           NumberOfItems;                // Number of items in knapsack
-    int           OriginalNumberOfItems;        // Original size without padding to multiple of 32
-    int           KnapsackCapacity;             // Total knapsack capacity
-    float         MaxPriceWightRatio;           // What is the best Price-Weight ration (to penalization)
+    /// Number of items in knapsack
+    int           NumberOfItems;        
+    /// Original size without padding to multiple of 32        
+    int           OriginalNumberOfItems;
+    /// Total knapsack capacity
+    int           KnapsackCapacity;     
+    /// What is the best Price-Weight ration (to penalization)
+    float         MaxPriceWightRatio;           
     
-    TPriceType  * ItemPrice;                    // An array listing all item prices
-    TWeightType * ItemWeight;                   // An array listing all item weights 
+    /// An array listing all item prices
+    TPriceType  * ItemPrice;                    
+    /// An array listing all item weights 
+    TWeightType * ItemWeight;                   
 
+    /// Constructor
     TGlobalKnapsackData();
-    
+    /// Destructor
     virtual ~TGlobalKnapsackData();
     
-    void LoadFromFile();                        // Load data from file (uses TParameters to get the FileName)
+    /// Load data from file (uses TParameters to get the FileName)
+    void LoadFromFile();                        
     
     
 protected:
-        
-    void AllocateMemory(int NumberOfItems);     // Allocate memory for arrays
-    void FreeMemory();                          // Free memory of arrays
+    /// Allocate memory for arrays        
+    void AllocateMemory(const int NumberOfItems);     
+    /// Free memory of arrays
+    void FreeMemory();                          
 
         
     
     
 };// end of TGlobalKnapsackData
 //------------------------------------------------------------------------------
-
-
-
-
-
 
 
 #endif	/* GLOBALKNAPSACKDATA_H */

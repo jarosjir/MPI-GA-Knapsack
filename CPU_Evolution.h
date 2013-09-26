@@ -1,29 +1,33 @@
-/* 
- * File:        CPU_Evolution.h
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file:       CPU_Evolution.h
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Header file of the GA evolution
- *              This class controls the evolution process on multicore CPU
+ * 
+ * @brief 	Header file  of the island based GA
+ *              
  *
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section	License
+ *		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
  * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+		26 September 2013, 11:05 (revised)
  */
  
 
@@ -37,87 +41,99 @@
 #include "GlobalKnapsackData.h"
 
 
-/*
- * struct of seed
+/**
+ * @struct r123_seed  
+ * @brief struct of seed
  */
 struct r123_seed{
+    /// first seed
     unsigned long seed1;
+    /// second seed
     unsigned long seed2;
 };// end of r123_seed
 //------------------------------------------------------------------------------
 
 
 
-/*
- * CPU evolution process
+/**
+ * @class TCPU_Evolution
+ * @brief CPU evolution process
  * 
  */
 class TCPU_Evolution{
 public:
-    
+   
+    /// Constructor  
     TCPU_Evolution(int argc, char **argv);
+    /// Destructor
     virtual ~TCPU_Evolution();
     
-    // Run evolution
+    /// Run evolution
     void Run();
     
-    // Is this a master process?
-    bool IsMaster() {return Params->IslandIdx() == 0;};
+    /// Is this a master process?
+    bool IsMaster() const {return Params->IslandIdx() == 0;};
     
 protected:    
-    TParameters * Params;                 // Parameters of evolution
-    int ActGeneration;                    // Actual generation            
+    /// Parameters of evolution
+    TParameters * Params;                 
+    /// Actual generation            
+    int ActGeneration;                    
     
-    
-    TCPU_Population* MasterPopulation;    // Master GA population  
-    TCPU_Population* OffspringPopulation; // Population of offsprings
+    /// Master GA population  
+    TCPU_Population* MasterPopulation;    
+    /// Population of offsprings
+    TCPU_Population* OffspringPopulation; 
 
+    /// Population of emigrants to Send
+    TCPU_Population* EmigrantsToSend;     
+    /// Population of immigrants to recieve
+    TCPU_Population* EmigrantsToReceive;  
     
-    TCPU_Population* EmigrantsToSend;     // Population of emigrants to Send
-    TCPU_Population* EmigrantsToReceive;  // Population of immigrants to recieve
+    /// Statistics over GA process
+    TCPU_Statistics *   CPUStatistics;    
+    /// Global data of knapsack    
+    TGlobalKnapsackData GlobalData;       
     
-    
-    TCPU_Statistics *   CPUStatistics;    // Statistics over GA process    
-    TGlobalKnapsackData GlobalData;       // Global data of knapsack
-    
-    // Get Random Seed for Random123
+    /// Get Random Seed for Random123
     r123_seed  GetSeed();
     
     
-    // Initialize
+    /// Initialize
     void Initialize();        
-    // Run evolution cycle
+    /// Run evolution cycle
     void RunEvolutionCycle();
     
-    // Generate first population
+    /// Generate first population
     void GenerateFirstPopulation(); 
     
-    // Genetic manipulation
+    /// Genetic manipulation
     void GeneticManipulation();
     
-    // Replacement phase
+    /// Replacement phase
     void Replacement();
     
-    // Migrate phase
+    /// Migrate phase
     void Migrate();
         
-    // Pack Emigrants to a buffer for dispatch
+    /// Pack Emigrants to a buffer for dispatch
     void PackEmigrantsToSend();
     
-    // Unpack immigrants form buffer
+    /// Unpack immigrants form buffer
     void UnpackReceivedEmigrants();
     
-    // Selection of two chromosomes
-    inline unsigned int Selection(TCPU_Population * ParentsData, unsigned int Random1, unsigned int Random2);
-    // Uniform Crossover    
+    /// Selection of two chromosomes
+    inline unsigned int Selection(const TCPU_Population * ParentsData, const unsigned int Random1, const unsigned int Random2);
+
+    /// Uniform Crossover    
     inline void CrossoverUniformFlip(TGene& GeneOffspring1, TGene& GeneOffspring2,
-                                     TGene& GeneParent1   , TGene& GeneParent2,
-                                     unsigned int RandomValue);
-    // Bit Flip mutaion Mutation 
+                                     const TGene& GeneParent1, const TGene& GeneParent2,
+                                     const unsigned int RandomValue);
+    /// Bit Flip mutaion Mutation 
     inline void MutationBitFlip(TGene& GeneOffspring1, TGene& GeneOffspring2,
-                                unsigned int RandomValue1,unsigned int RandomValue2, int BitID);
+                                const unsigned int RandomValue1, const unsigned int RandomValue2, const int BitID);
         
-    
+    /// Copy constructor
     TCPU_Evolution(const TCPU_Evolution& orig);
 };
 

@@ -1,29 +1,33 @@
-/* 
- * File:        CPU_Population.cpp
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file:       CPU_Population.cpp
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Implementation file of the GA population
- *              This class maintains and GA populations
+ * 
+ * @brief 	Implementation file of the GA population
+ *              
  *
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section	License
+ *		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
  * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+		26 September 2013, 10:50 (revised)
  */
 
 #include <sstream>
@@ -47,16 +51,15 @@
 //                              public methods                                //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Constructor of the class
  * 
- * @param PopulationSize
- * @param ChromosomeSize
+ * @param [in] PopulationSize
+ * @param [in] ChromosomeSize
  * 
  */
-TCPU_Population::TCPU_Population(const int PopulationSize, const int ChromosomeSize){
-  
-    
+TCPU_Population::TCPU_Population(const int PopulationSize, const int ChromosomeSize)
+{    
     this->ChromosomeSize = ChromosomeSize;
     this->PopulationSize = PopulationSize;
     
@@ -66,26 +69,27 @@ TCPU_Population::TCPU_Population(const int PopulationSize, const int ChromosomeS
 //------------------------------------------------------------------------------
     
 
-/*
+/**
  * Destructor of the class
  */
-TCPU_Population::~TCPU_Population(){
-    
+TCPU_Population::~TCPU_Population()
+{    
     FreeMemory();
-        
+       
 }// end of TCPU_Population
 //------------------------------------------------------------------------------
     
 
 
-/*
+/**
  * Print chromosome to string
  * 
- * @param Idx - Idx of chromosome in population
+ * @param [in] Idx Idx of chromosome in population
+ * @return String representation of chromosome
  */
-string TCPU_Population::GetStringOfChromosome(const int Idx){
-    
-    
+string TCPU_Population::GetStringOfChromosome(const int Idx)
+{
+       
  stringstream  S;    
 
   // simple print of chromosome 
@@ -100,20 +104,20 @@ string TCPU_Population::GetStringOfChromosome(const int Idx){
      
   }
  
- 
  return S.str();   
     
 }// end of GetStringOfChromozome
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Calculate fitness using SSE 4.1 instructions
  * 
- * @param GlobalKnapsack data
+ * @param [in] GlobalKnapsackData
  * 
  */
-void TCPU_Population::CalculateFitness_SSE(TGlobalKnapsackData * GlobalKnapsackData){
+void TCPU_Population::CalculateFitness_SSE(const TGlobalKnapsackData * GlobalKnapsackData)
+{
  
   TParameters * Params = TParameters::GetInstance();  
     
@@ -180,13 +184,14 @@ void TCPU_Population::CalculateFitness_SSE(TGlobalKnapsackData * GlobalKnapsackD
 //-----------------------------------------------------------------------------
 
 
-/*
+/**
  * Calculate fitness, normal version
  * 
- * * @param GlobalKnapsack data
+ * @param [in] GlobalKnapsackData
  * 
  */
-void TCPU_Population::CalculateFitness(TGlobalKnapsackData * GlobalKnapsackData){
+void TCPU_Population::CalculateFitness(const TGlobalKnapsackData * GlobalKnapsackData)
+{
  
   TParameters * Params = TParameters::GetInstance();  
     
@@ -243,8 +248,7 @@ void TCPU_Population::CalculateFitness(TGlobalKnapsackData * GlobalKnapsackData)
       Fitness[ChromosomeIdx] = result;
       
   }// end master for
-  
-    
+      
 }// end of CalculateFitness
 //-----------------------------------------------------------------------------
 
@@ -258,10 +262,11 @@ void TCPU_Population::CalculateFitness(TGlobalKnapsackData * GlobalKnapsackData)
 //                            protected methods                               //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Allocate memory
  */
-void TCPU_Population::AllocateMemory(){
+void TCPU_Population::AllocateMemory()
+{
     
     Population = (TGene    *) memalign(16, sizeof(TGene)    * ChromosomeSize * PopulationSize );
     Fitness    = (TFitness *) memalign(16, sizeof(TFitness) * PopulationSize );
@@ -269,10 +274,11 @@ void TCPU_Population::AllocateMemory(){
 }// end of AllocateMemory
 //------------------------------------------------------------------------------
 
-/* 
+/** 
  * Free memory
  */
-void TCPU_Population::FreeMemory(){
+void TCPU_Population::FreeMemory()
+{
 
     free(Population);
     free(Fitness);

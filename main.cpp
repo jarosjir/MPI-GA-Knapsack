@@ -1,30 +1,58 @@
-/* 
- * File:        main.cpp 
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file	main.cpp 
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Efficient MPI implementation of the Island-Based, 
- *              Genetic Algorithm solving the Knapsack problem.
+ * @brief 	Efficient MPI implementation of the Island-Based, \n
+ *            	Genetic Algorithm solving the Knapsack problem.
  *
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+		20 September 2012, 13:00 (revised)
+
+ * @mainpage 	MPI-GA-knapsack
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section     License 
+ * 		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
- * 
- * Created on 06 June 2012, 00:00 PM
+ *
+ * @section	Usage
+		Efficient MPI implementation of the Island-Based, 
+ *            	Genetic Algorithm solving the Knapsack problem.
+ * 		
+ * \verbatim	
+ ----------------------------------------------------------------
+Parameters: 
+  -p <integer value>	: Population size       (default 128)
+  -g <integer value>	: Number of generations (default 100)
+
+  -m <float value> 	: Mutation rate 	(default 0.01)
+  -c <float value> 	: Crossover rate	(default 0.7)
+  -o <float value> 	: Offspring rate	(default 0.5)
+
+  -e <float value>	: Emigrant rate		(default 0.1)
+  -n <integer value>	: Migration interval	(default 1)
+  -s <integer value>	: Statistics interval	(default 1)
+
+  -b 			: Print best individual
+  -f <file_name>	: Benchmark_file_name	(default knapsack_data.txt)
+\endverbatim
  */
+
+
 
 
 #include <cstdlib>
@@ -40,8 +68,11 @@ using namespace std;
 
 
 
-/*
- * Main Function
+/** 
+ *  The main function
+ * @param argc
+ * @param argv
+ * @return error code
  */
 int main(int argc, char **argv)
 {
@@ -67,6 +98,7 @@ int main(int argc, char **argv)
       // MPI finalization
     MPI_Finalize();
 
-    return 0;
-}
+    return EXIT_SUCCESS;;
+}// end of main
+//------------------------------------------------------------------------------
 

@@ -1,31 +1,34 @@
-/* 
- * File:        CPU_Statistics.cpp
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file:       CPU_Statistics.cpp
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Implementation file of the GA statistics
- *              This class maintains and collects GA statistics
+ * 
+ * @brief 	Implementaion of  the GA statistics over islands
+ *              
  *
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section	License
+ *		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
  * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+		26 September 2013, 10:00 (revised)
  */
-
 
 
 #include <sstream>
@@ -51,11 +54,12 @@
 //----------------------------------------------------------------------------//
 
 
-/*
+/**
  * Constructor of the class
  * 
  */
-TCPU_Statistics::TCPU_Statistics(){
+TCPU_Statistics::TCPU_Statistics()
+{
         
     StatReceiveBuffer       = NULL;        
     ReceiveIndividualBuffer = NULL;
@@ -68,11 +72,12 @@ TCPU_Statistics::TCPU_Statistics(){
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Destructor of the class
  * 
  */
-TCPU_Statistics::~TCPU_Statistics(){
+TCPU_Statistics::~TCPU_Statistics()
+{
     
     FreeMemory();
            
@@ -80,19 +85,20 @@ TCPU_Statistics::~TCPU_Statistics(){
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Calculate Statistics
  * 
- * @param       Population - Pointer to population to calculate statistics over 
+ * @param [in]  Population - Pointer to population to calculate statistics over 
  * 
  */    
-void TCPU_Statistics::Calculate(TCPU_Population * Population){
+void TCPU_Statistics::Calculate(const TCPU_Population * Population)
+{
     
     
     // Calculate local statistics
     CalculateLocalStatistics(Population);
    
-    TParameters * Params = TParameters::GetInstance();
+    const TParameters * Params = TParameters::GetInstance();
         
     
     // Collect statistical data 
@@ -113,13 +119,14 @@ void TCPU_Statistics::Calculate(TCPU_Population * Population){
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Print best individual as a string
  *
- * @param Global knapsack data
- * @retur Best individual in from of a sting 
+ * @param [in] GlobalKnapsackData
+ * @return Best individual in from of a sting 
  */   
-string TCPU_Statistics::GetBestIndividualStr(TGlobalKnapsackData * GlobalKnapsackData){
+string TCPU_Statistics::GetBestIndividualStr(const TGlobalKnapsackData * GlobalKnapsackData)
+{
 
     stringstream  S; 
     
@@ -151,17 +158,18 @@ string TCPU_Statistics::GetBestIndividualStr(TGlobalKnapsackData * GlobalKnapsac
  
  return S.str();   
 } // end of GetBestIndividualStr
-
+//------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------//
 //                       TLocalStatistics Implementation                       //
 //                              protected methods                             //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Allocate memory
  */
-void TCPU_Statistics::AllocateMemory(){
+void TCPU_Statistics::AllocateMemory()
+{
     
     
     TParameters*  Params = TParameters::GetInstance();
@@ -176,10 +184,11 @@ void TCPU_Statistics::AllocateMemory(){
 }// end of AllocateMemory
 //------------------------------------------------------------------------------
 
-/*
+/**
  * Free GPU memory
  */
-void TCPU_Statistics::FreeMemory(){
+void TCPU_Statistics::FreeMemory()
+{
        
     if (StatReceiveBuffer){
         free(StatReceiveBuffer);       
@@ -194,13 +203,14 @@ void TCPU_Statistics::FreeMemory(){
 //------------------------------------------------------------------------------
     
     
-/*
+/**
  * Calculate local statistics
  * 
- * @param Population - Calculate local statistics over population
+ * @param [in] Population - Calculate local statistics over population
  * 
  */
-void TCPU_Statistics::CalculateLocalStatistics(TCPU_Population * Population){
+void TCPU_Statistics::CalculateLocalStatistics(const TCPU_Population * Population)
+{
    
     // initialize values
     StatDataBuffer.MinFitness = TFitness(UINT_MAX);
@@ -228,10 +238,11 @@ void TCPU_Statistics::CalculateLocalStatistics(TCPU_Population * Population){
 }// end of CalculateLocalStatistics
 //------------------------------------------------------------------------------
     
-/*
+/**
  * Calculate global statistics
  */
-void TCPU_Statistics::CalculateGlobalStatistics(){
+void TCPU_Statistics::CalculateGlobalStatistics()
+{
      
  BestIslandIdx = 0;
  
@@ -276,11 +287,13 @@ void TCPU_Statistics::CalculateGlobalStatistics(){
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Set ONLY best individual Idx and its fitness to statistics
+ * @param [in] Population to find the best solution and set max index
  * 
  */
-void  TCPU_Statistics::SetBestLocalIndividualAndMaxFintess(TCPU_Population * Population){
+void  TCPU_Statistics::SetBestLocalIndividualAndMaxFintess(const TCPU_Population * Population)
+{
     
     StatDataBuffer.MaxFitness = TFitness(0);
         

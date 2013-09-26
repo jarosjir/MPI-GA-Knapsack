@@ -1,30 +1,35 @@
-/* 
- * File:        CPU_Population.h
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file:       CPU_Population.h
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Header file of the GA population
- *              This class maintains and GA populations
+ * 
+ * @brief 	Header file of the GA population
+ *              
  *
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section	License
+ *		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
  * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+		26 September 2013, 10:50 (revised)
  */
+
 
 
 #ifndef CPU_POPULATION_H
@@ -37,55 +42,67 @@
 
 using namespace std;
 
+/**
+ * @typedef TGene 
+ * @brief Datatype for one gene 
+ */
 typedef unsigned int TGene;
+
+/**
+ * @typedef TFitness
+ * @brief Datatype fitness value
+ */
 typedef float        TFitness;
 
 
 
-/*
- * CPU version of GA Population
+/**
+ * @class TCPU_Population
+ * @brief CPU version of GA Population
  * 
  */
 class TCPU_Population{
 public:
-    int PopulationSize;        // Number of chromosomes
-    int ChromosomeSize;        // Size of chromosome in INTs
+    /// Number of chromosomes
+    int PopulationSize;      
+    /// Size of chromosome in INTs  
+    int ChromosomeSize;      
 
-    
-    TGene    * Population;    // 1D array of genes (chromosome-based encoding)
-    TFitness * Fitness;       // 1D array of fitness values
+    /// 1D array of genes (chromosome-based encoding)
+    TGene    * Population;    
+    /// 1D array of fitness values
+    TFitness * Fitness;       
 
-        
+    /// Constructor  
     TCPU_Population(const int PopulationSize, const int ChromosomeSize);
         
-        // Get string representation of chromosome
+    /// Get string representation of chromosome
     string GetStringOfChromosome(const int Idx);
     
-    // Calculate fitness values of all chromosomes
-    void CalculateFitness(TGlobalKnapsackData * GlobalKnapsackData);
+    /// Calculate fitness values of all chromosomes
+    void CalculateFitness(const TGlobalKnapsackData * GlobalKnapsackData);
     
-    // Calculate fitenss values of all chromosome, SSE4.1 version (works on Nehalem and newer cores)
-    void CalculateFitness_SSE(TGlobalKnapsackData * GlobalKnapsackData);
+    /// Calculate fitenss values of all chromosome, SSE4.1 version (works on Nehalem and newer cores)
+    void CalculateFitness_SSE(const TGlobalKnapsackData * GlobalKnapsackData);
 
     
-    
+    /// Destructor
     virtual ~TCPU_Population();
 
 protected:
     
-        // Memory allocation
+    /// Memory allocation
     void AllocateMemory();
     
-    // Memory dealocation
+    /// Memory dealocation
     void FreeMemory();
-
-    
+   
     
 private:
-        // default constructor not allowed
+    /// Default constructor not allowed
     TCPU_Population();            
     
-        // copy constructor not allowed
+    /// Copy constructor not allowed
     TCPU_Population(const TCPU_Population& orig);
         
 };// end of TCPU_Population

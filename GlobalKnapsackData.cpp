@@ -1,30 +1,31 @@
-/* 
- * File:        GlobalKnapsackData.cpp
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/** 
+ * @file        GlobalKnapsackData.cpp
+ * @author      Jiri Jaros
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Implementation file of the knapsack global data class. 
- *              This class maintains the benchmark data
- *
- * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ *  
+ * @brief       Implementation file of the knapsack global data class. 
+ *              
+ * @section     This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
- * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+ *		26 September 2013, 09:58 (revised)
  */
+
 
 
 
@@ -49,10 +50,11 @@
 //                              public methods                                //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Constructor of the class
  */
-TGlobalKnapsackData::TGlobalKnapsackData(){
+TGlobalKnapsackData::TGlobalKnapsackData()
+{
     
     NumberOfItems               = 0;
     OriginalNumberOfItems       = 0;
@@ -61,16 +63,16 @@ TGlobalKnapsackData::TGlobalKnapsackData(){
     
     ItemPrice                   = NULL;
     ItemWeight                  = NULL;
-    
-    
+       
 }// end of constructor
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Destructor of the class
  */   
-TGlobalKnapsackData::~TGlobalKnapsackData(){
+TGlobalKnapsackData::~TGlobalKnapsackData()
+{
     
     FreeMemory();
     
@@ -79,10 +81,11 @@ TGlobalKnapsackData::~TGlobalKnapsackData(){
     
 
 
-/*
+/**
  * Load data from file, filename given in Parameter class
  */
-void TGlobalKnapsackData::LoadFromFile(){
+void TGlobalKnapsackData::LoadFromFile()
+{
     
     
     // Get instance of Parameter class    
@@ -159,12 +162,13 @@ void TGlobalKnapsackData::LoadFromFile(){
 //                           protected methods                                //
 //----------------------------------------------------------------------------//
 
-/*
+/**
  * Allocate memory
  * 
  * @param       NumberOfItems - Number of Items in Knapsack with padding
  */
-void TGlobalKnapsackData::AllocateMemory(int NumberOfItems){    
+void TGlobalKnapsackData::AllocateMemory(const int NumberOfItems)
+{    
     
     // Allocate class memory with 16B with alignment
     
@@ -176,10 +180,11 @@ void TGlobalKnapsackData::AllocateMemory(int NumberOfItems){
 //------------------------------------------------------------------------------
 
 
-/*
+/**
  * Free Memory
  */
-void TGlobalKnapsackData::FreeMemory(){
+void TGlobalKnapsackData::FreeMemory()
+{
 
     // Free class memory
     free(ItemPrice);

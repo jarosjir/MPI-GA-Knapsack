@@ -1,31 +1,34 @@
-/* 
- * File:        Parameters.h
- * Author:      Jiri Jaros
- * Affiliation: Brno University of Technology
- *              Faculty of Information Technology
+/**
+ * @file:       Parameters.h
+ * @author	Jiri Jaros \n
+ *   	 	Brno University of Technology \n
+ *              Faculty of Information Technology \n
  *              
- *              and
+ *              and			\n
  * 
- *              The Australian National University
- *              ANU College of Engineering & Computer Science
+ *              The Australian National University	\n
+ *              ANU College of Engineering & Computer Science	\n
  *
- * Email:       jarosjir@fit.vutbr.cz
- * Web:         www.fit.vutbr.cz/~jarosjir
+ * 		jarosjir@fit.vutbr.cz
+ * 	        www.fit.vutbr.cz/~jarosjir
  * 
- * Comments:    Header file of the parameter class. 
- *              Efficient MPI implementation of the Island-Based, 
- *              Genetic Algorithm solving the Knapsack problem.
+ * 
+ * @brief 	Header file the class that maintains all the parameters of evolution.
  *
  * 
- * License:     This source code is distribute under OpenSource GNU GPL license
+ * @section	License
+ *		This source code is distribute under OpenSource GNU GPL license
  *                
  *              If using this code, please consider citation of related papers
  *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
  *      
  *
  * 
- * Created on 06 June 2012, 00:00 PM
+ * @version	1.0
+ * @date	06 June      2012, 00:00 (created)
+ *		20 September 2013, 14:58 (revised)
  */
+
 
 
 #ifndef PARAMETERS_H
@@ -36,102 +39,132 @@
 using namespace std;
 
 
-/*
- * Evolution Parameters structure
+/**
+ * @struct TEvolutionParameters
+ * @brief  Structure with all parameters for the evolutionary algorithm
  */
 struct TEvolutionParameters{    
-    int   PopulationSize;                 // Population size
-    int   OffspringPopulationSize;        // Offspring population size
-    int   ChromosomeSize;                 // Length of binary chromosome in int chunks
-    int   NumOfGenerations;               // Total number of generations to evolve
+    /// Population size
+    int   PopulationSize;                
+    /// Offspring population size
+    int   OffspringPopulationSize;        
+    /// Length of binary chromosome in int chunks
+    int   ChromosomeSize;
+    /// Total number of generations to evolve                 
+    int   NumOfGenerations;               
     
+    /// Crossover rate (as flaot)
+    float CrossoverPst;                 
+    /// Mutaion rate   (as float      
+    float MutationPst;                  
+    /// Crossover rate as uint 
+    unsigned int CrossoverUINTBoundary; 
+    /// Mutation rate as uint 
+    unsigned int MutationUINTBoundary;  
     
-    float CrossoverPst;                 // Crossover rate (as flaot)
-    float MutationPst;                  // Mutaion rate   (as float      
-    unsigned int CrossoverUINTBoundary; // Crossover rate as uint 
-    unsigned int MutationUINTBoundary;  // Mutation rate as uint 
+    /// Number of migrating individuals    
+    int EmigrantCount;
+    /// Number of CPU threads                  
+    int MigrationInterval;
+    /// Index of Island              
+    int IslandIdx;
+    /// Number of independent islands                      
+    int IslandCount;
+    /// How often to print statistics                    
+    int StatisticsInterval;             
     
-    
-    int EmigrantCount;                  // Number of migrating individuals
-    int MigrationInterval;              // Number of CPU threads
-    int IslandIdx;                      // Index of Island
-    int IslandCount;                    // Number of independent islands
-    int StatisticsInterval;             // How often to print statistics
-
-    int IntBlockSize;                   // size of int block (32 bin genes)
+    /// size of int block (32 bin genes)
+    int IntBlockSize;                   
 };// end of TEvolutionParameters
 //------------------------------------------------------------------------------
 
 
 
-/*
- * Singleton class with Parameters maintaining them in CPU and GPU constant memory
+/**
+ * @class TParameters
+ * @brief Singleton class with Parameters maintaining them in CPU and GPU constant memory
  */
 class TParameters {
 public:
     
-    // Get instance of the singleton class
+    /// Get instance of the singleton class
     static TParameters* GetInstance();
     
     
-    // Destructor
+    /// Destructor
     virtual ~TParameters() {
         pTParametersInstanceFlag = false;
     };
       
-    // Parse command line and populate the class
-    void LoadParametersFromCommandLine(int argc, char **argv);
+    /// Parse command line and populate the class
+    void  LoadParametersFromCommandLine(int argc, char **argv);
       
-    // Return values of basic parameters
-    int PopulationSize()                  const {return EvolutionParameters.PopulationSize; };
-    int ChromosomeSize()                  const {return EvolutionParameters.ChromosomeSize; };        
-    void         SetChromosomeSize(const int Value) {EvolutionParameters.ChromosomeSize = Value; };    
-    int          NumOfGenerations()       const {return EvolutionParameters.NumOfGenerations; };
+    /// Get population size
+    int   PopulationSize() 		const {return EvolutionParameters.PopulationSize; };
+    /// Get chromosome length
+    int   ChromosomeSize() 		const {return EvolutionParameters.ChromosomeSize; };        
+    /// Set chromosome size
+    void  SetChromosomeSize(const int Value) {EvolutionParameters.ChromosomeSize = Value; };    
+    /// Get total number of generations
+    int   NumOfGenerations() 		const {return EvolutionParameters.NumOfGenerations; };
     
+    /// Get Crossover pst
+    float CrossoverPst() 		const {return EvolutionParameters.CrossoverPst; };
+    /// Get Mutation pst
+    float MutationPst() 		const {return EvolutionParameters.MutationPst; };
+
+    /// Get decision boundary for crossover as an uint
+    unsigned int CrossoverUINTBoundary() const {return EvolutionParameters.CrossoverUINTBoundary; };    
+    /// Get decision boundary formutation as an uint
+    unsigned int MutationUINTBoundary() const {return EvolutionParameters.MutationUINTBoundary; };
     
-    float        CrossoverPst()           const {return EvolutionParameters.CrossoverPst; };
-    float        MutationPst()            const {return EvolutionParameters.MutationPst; };
-    unsigned int CrossoverUINTBoundary()  const {return EvolutionParameters.CrossoverUINTBoundary; };    
-    unsigned int MutationUINTBoundary()   const {return EvolutionParameters.MutationUINTBoundary; };
-    
-    int          OffspringPopulationSize() const {return EvolutionParameters.OffspringPopulationSize; };
-   
-    int          EmigrantCount()        const {return EvolutionParameters.EmigrantCount; };
-    int          MigrationInterval()    const {return EvolutionParameters.MigrationInterval; };
-    int          IslandIdx()            const {return EvolutionParameters.IslandIdx;};
-    int          IslandCount()          const {return EvolutionParameters.IslandCount; };    
-    int          StatisticsInterval()   const {return EvolutionParameters.StatisticsInterval;};    
+    /// Get offspring population size
+    int OffspringPopulationSize() 	const {return EvolutionParameters.OffspringPopulationSize; };
+    /// Get number of emigants
+    int EmigrantCount() 		const {return EvolutionParameters.EmigrantCount; };
+    /// Get migration interval
+    int MigrationInterval()    		const {return EvolutionParameters.MigrationInterval; };
+    /// Get island index
+    int IslandIdx()            		const {return EvolutionParameters.IslandIdx;};
+    /// Get total number of islands
+    int IslandCount()          		const {return EvolutionParameters.IslandCount; };    
+    /// Get interval in which to collect statistics 
+    int StatisticsInterval()   		const {return EvolutionParameters.StatisticsInterval;};    
         
-    int          IntBlockSize()         const {return EvolutionParameters.IntBlockSize;};  
+    /// Get IntBlock size
+    int IntBlockSize()         		const {return EvolutionParameters.IntBlockSize;};  
             
-    // Get filename with global data
-    string       BenchmarkFileName()    const {return GlobalDataFileName;};
+    /// Get filename with global data
+    string BenchmarkFileName()    	const {return GlobalDataFileName;};
         
-    // Print best solution?
-    bool         GetPrintBest()         const {return FPrintBest;};
+    /// Print best solution?
+    bool GetPrintBest()         	const {return FPrintBest;};
     
-    // Print usage end exit
+    /// Print usage end exit
     void PrintUsageAndExit();
-    // print parameters to stdout
+    /// print parameters to stdout
     void PrintAllParameters();
     
 private:        
+    /// Evolution  parameters
     TEvolutionParameters EvolutionParameters;   
+    ///Global data filename
     string               GlobalDataFileName;
         
-    
-    static bool         pTParametersInstanceFlag;
+    /// Singleton instance
+    static bool        	 pTParametersInstanceFlag;
+    /// Singleton instance
     static TParameters *pTParametersSingle;
-        
+    /// Shall it print the best solution?    
     bool                FPrintBest;      
         
-    
+    /// prevent default constructor
     TParameters();
 
-    //Prevent copy-construction
+    ///Prevent copy-construction
     TParameters(const TParameters&);
 
-    //Prevent assignment
+    ///Prevent assignment
     TParameters& operator=(const TParameters&);
     
 };// end of TParameters
