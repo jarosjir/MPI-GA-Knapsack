@@ -31,8 +31,8 @@
 
 #include "Random123/philox.h"
 
-#include "CPU_Evolution.h"
-#include "CPU_Statistics.h"
+#include "Evolution.h"
+#include "Statistics.h"
 #include "Parameters.h"
 
 using namespace std;
@@ -129,8 +129,8 @@ r123Seed Evolution::getSeed()
   gettimeofday(&tp1, nullptr);
 
   // use time in seconds divided by IslandID and
-  seed.seed1 = static_cast<unsigned long>(tp1.tv_sec);
-  seed.seed2 = static_cast<unsigned long>(tp1.tv_usec);
+  seed.seed1 = static_cast<uint32_t>(tp1.tv_sec);
+  seed.seed2 = static_cast<uint32_t>(tp1.tv_usec);
 
   /*seed.seed1 = static_cast<unsigned long>(0);
   seed.seed2 = static_cast<unsigned long>(0);*/
@@ -158,12 +158,6 @@ void Evolution::runEvolutionCycle()
   // Execute N generations
   for (mActGeneration = 1; mActGeneration < mParams.getNumOfGenerations(); mActGeneration++)
   {
-
-   /* mMasterPopulation->printPopulation();
-    if (isMaster())
-    {
-      printf("xxxxxxxxxxxxxxxxxxxxxxxx\n");
-    }*/
     // If it's time for migration then migrate
     if (mActGeneration % mParams.getMigrationInterval() == 0)
     {
@@ -469,44 +463,6 @@ void Evolution::crossoverUniformFlip(Gene& offspring1,
     }
   }// chromosomeIdx
 }// end of replacement
-/*void Evolution::replacement()
-{
-  // Init Random Number Generator
-  RNG_2x32  rng_4x32;
-  RNG_2x32::key_type key     = {{uint32_t(mParams.getIslandIdx())}};
-  RNG_2x32::ctr_type counter = {{getSeed().seed1 ,getSeed().seed2}};
-  RNG_2x32::ctr_type randomValues;
-
-  for (int chromosomeIdx = 0; chromosomeIdx < mParams.getPopulationSize(); chromosomeIdx += 2)
-  {
-    counter.incr();
-    randomValues = rng_4x32(counter, key);
-
-    // Inline selection
-    const unsigned int idx1 = randomValues.v[0] % mOffspringPopulation->populationSize;
-    const unsigned int idx2 = randomValues.v[1] % mOffspringPopulation->populationSize;
-
-    //  Replace individuals if necessary
-    if (mOffspringPopulation->fitness[idx1] > mMasterPopulation->fitness[chromosomeIdx])
-    {
-      memcpy(&mMasterPopulation->population   [chromosomeIdx * mParams.getChromosomeSize()],
-             &mOffspringPopulation->population[idx1          * mParams.getChromosomeSize()],
-             mParams.getChromosomeSize() * sizeof(Gene));
-
-      mMasterPopulation->fitness[chromosomeIdx] = mOffspringPopulation->fitness[idx1];
-    }
-
-    if (mOffspringPopulation->fitness[idx2] > mMasterPopulation->fitness[chromosomeIdx + 1])
-    {
-      memcpy(&mMasterPopulation->population   [(chromosomeIdx + 1) * mParams.getChromosomeSize()],
-             &mOffspringPopulation->population[idx2                * mParams.getChromosomeSize()],
-             mParams.getChromosomeSize() * sizeof(Gene));
-      mMasterPopulation->fitness[chromosomeIdx + 1] = mOffspringPopulation->fitness[idx2];
-
-    }
-  }// chromosomeIdx
-}// end of replacement*/
-//----------------------------------------------------------------------------------------------------------------------
 
 /**
  * Unidirectional migration.

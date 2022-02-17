@@ -23,7 +23,7 @@
 #      
 #
 # 
-# Created on 06 June 2012, 00:00 PM
+# Created on 17 February 2022, 13:57 PM
 #
 
 
@@ -35,8 +35,8 @@ TARGET= mpi_ga_knapsack
 
 all:		$(TARGET)	
 
-$(TARGET):	main.o CPU_Statistics.o Parameters.o CPU_Population.o CPU_Evolution.o GlobalKnapsackData.o
-	$(CXX) $(LDFLAGS) main.o CPU_Statistics.o Parameters.o CPU_Population.o CPU_Evolution.o GlobalKnapsackData.o -lm -o $@ $(LIBS) 
+$(TARGET):	main.o Statistics.o Parameters.o Population.o Evolution.o GlobalKnapsackData.o
+	$(CXX) $(LDFLAGS) main.o Statistics.o Parameters.o Population.o Evolution.o GlobalKnapsackData.o -lm -o $@ $(LIBS)
 
 
 

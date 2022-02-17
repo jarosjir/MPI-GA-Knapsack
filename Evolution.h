@@ -29,8 +29,8 @@
 
 
 #include "Parameters.h"
-#include "CPU_Population.h"
-#include "CPU_Statistics.h"
+#include "Population.h"
+#include "Statistics.h"
 #include "GlobalKnapsackData.h"
 
 

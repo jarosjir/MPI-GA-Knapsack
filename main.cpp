@@ -51,7 +51,7 @@ Parameters:
 
 #include <mpi.h>
 
-#include "CPU_Evolution.h"
+#include "Evolution.h"
 #include "Parameters.h"
 
 

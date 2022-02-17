@@ -29,7 +29,7 @@
 #include <malloc.h>
 #include <string.h>
 
-#include "CPU_Population.h"
+#include "Population.h"
 #include "Parameters.h"
 
 
