@@ -1,37 +1,31 @@
 /**
- * @file:       CPU_Statistics.h
- * @author	Jiri Jaros \n
- *   	 	Brno University of Technology \n
- *              Faculty of Information Technology \n
- *              
- *              and			\n
- * 
- *              The Australian National University	\n
- *              ANU College of Engineering & Computer Science	\n
+ * @file        Statistics.h
+ * @author      Jiri Jaros
+ *              Brno University of Technology
+ *              Faculty of Information Technology
  *
- * 		jarosjir@fit.vutbr.cz
- * 	        www.fit.vutbr.cz/~jarosjir
- * 
- * 
- * @brief 	Header file of the GA statistics over islands
- *              
+ *              and
  *
- * 
- * @section	License
- *		This source code is distribute under OpenSource GNU GPL license
- *                
- *              If using this code, please consider citation of related papers
- *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
- *      
+ *              The Australian National University
+ *              ANU College of Engineering & Computer Science
  *
- * 
- * @version	1.0
- * @date	06 June      2012, 00:00 (created)
-		26 September 2013, 10:00 (revised)
+ *              jarosjir@fit.vutbr.cz
+ *              www.fit.vutbr.cz/~jarosjir
+ *
+ * @brief       Header file of the GA statistics over islands
+ *
+ * @date        06 June      2012, 00:00 (created)
+ *              15 February  2022, 14:38 (revised)
+ *
+ * @copyright   Copyright (C) 2012 - 2022 Jiri Jaros.
+ *
+ * This source code is distribute under OpenSouce GNU GPL license.
+ * If using this code, please consider citation of related papers
+ * at http://www.fit.vutbr.cz/~jarosjir/pubs.php
  */
 
-#ifndef CPU_STATISTICS_H
-#define	CPU_STATISTICS_H
+#ifndef STATISTICS_H
+#define	STATISTICS_H
 
 
 #include "Parameters.h"
@@ -39,103 +33,114 @@
 #include "GlobalKnapsackData.h"
 
 /**
- * @struct TStatDataToExchange
- * @brief  Statistic structure for exchange between nodes
+ * @struct StatsDataToExchange
+ * @brief  Statistic structure for exchange between nodes.
  */
-struct TStatDataToExchange{
-  /// Minimum fitness value in population
-  TFitness MinFitness;
-  /// Minimum fitness value in population        
-  TFitness MaxFitness;
-  /// Sum of all fitness values over population
-  TFitness SumFitness;   
-  /// Sum of squares of all fitness values over poopulation
-  TFitness Sum2Fitness;               
-};
-//------------------------------------------------------------------------------
+struct StatsDataToExchange
+{
+  /// Minimum fitness value in population.
+  Fitness minFitness;
+  /// Minimum fitness value in population.
+  Fitness maxFitness;
+  /// Sum of all fitness values over population.
+  Fitness sumFitness;
+  /// Sum of squares of all fitness values over population.
+  Fitness sum2Fitness;
+};// end of StatsDataToExchange
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
- * @class TDerivedStats
- * @brief Derived statistics structure
+ * @class DerivedStats
+ * @brief Derived statistics structure.
  */
-struct TDerivedStats{
-    /// Average Fintess
-    float AvgFitness;
-    /// Divergence
-    float Divergence;
-};
+struct DerivedStats
+{
+  /// Average Fitness
+  double avgFitness;
+  /// Divergence
+  double divergence;
+};// end of DerivedStats
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
- * @class TCPU_Statistics
- * @brief Class that maintains local and global statistic of the island GA
- * 
+ * @class Statistics
+ * @brief Class that maintains local and global statistic of the island GA.
  */
-class TCPU_Statistics {
-public:
-    
-    /// Get maximum fitness value over all nodes, only master can read!
-    TFitness GetMaxFitness()    const {return StatDataBuffer.MaxFitness;};
-    /// Get minimum fitness value over all nodes, only master can read!
-    TFitness GetMinFitness()    const {return StatDataBuffer.MinFitness;};
-    /// Get average fitness value over all nodes, only master can read!
-    float    GetAvgFitness()    const {return DerivedStats.AvgFitness;};
-    /// Get fitness divergence value over all nodes, only master can read!
-    float    GetDivergence()    const {return DerivedStats.Divergence;};
-    /// Get the ID of the best island over all nodes, only master can read!
-    int      GetBestIslandIdx() const {return BestIslandIdx;};
-    /// Get the best local solution index 
-    int      GetBestLocalSolutionIdx() const {return LocalBestSolutionIdx;};
-    
-    /// Get best individual chromosome as a string, only master can call this function!
-    string   GetBestIndividualStr(const TGlobalKnapsackData * GlobalKnapsackData);
-
-    /// Calculate statistics - all islands must call this routine
-    void     Calculate(const TCPU_Population * Population);       
-    /// Set best individual and max fitness for the local node
-    void     SetBestLocalIndividualAndMaxFintess(const TCPU_Population * Population);
-    
+class Statistics
+{
+  public:
     /// Constructor
-             TCPU_Statistics();
-    /// Destructor
-    virtual ~TCPU_Statistics();
-
-protected:
-    /// Statistics data to exchange
-    TStatDataToExchange   StatDataBuffer;       
-    /// Buffer to receive statistics
-    TStatDataToExchange * StatReceiveBuffer;    
-    
-    /// Derived statistics
-    TDerivedStats DerivedStats;                 
-    /// Index to the local best solution
-    int           LocalBestSolutionIdx;         
-    /// Best island (island with the best solution)
-    int           BestIslandIdx;                
-       
-    /// Buffer for best solution coming over network
-    TGene    *    ReceiveIndividualBuffer;      
-        
-    /// Allocate Memory    
-    void AllocateMemory();                      
-    /// Free Memory
-    void FreeMemory();                          
-             
-    /// Calculate local stats
-    void CalculateLocalStatistics(const TCPU_Population * Population); 
-    /// Calculate global stats 
-    void CalculateGlobalStatistics();           
-    
-private:
+    Statistics();
     /// copy constructor not allowed
-    TCPU_Statistics(const TCPU_Population& orig);
+    Statistics(const Population& orig) = delete;
+    /// Destructor
+    virtual ~Statistics();
 
-};// end of TGPU_Statistics
-//------------------------------------------------------------------------------
-
-
-
-
+    /// Disable assignment operator.
+    Statistics& operator=(const Statistics&) = delete;
 
 
-#endif	/* CPU_STATISTICS_H */
+    /// Get maximum fitness value over all nodes, only master can read!
+    Fitness getMaxFitness()    const { return mStatDataBuffer.maxFitness; };
+    /// Get minimum fitness value over all nodes, only master can read!
+    Fitness getMinFitness()    const { return mStatDataBuffer.minFitness; };
+    /// Get average fitness value over all nodes, only master can read!
+    double  getAvgFitness()    const { return mDerivedStats.avgFitness; };
+    /// Get fitness divergence value over all nodes, only master can read!
+    double  getDivergence()    const { return mDerivedStats.divergence; };
+    /// Get the ID of the best island over all nodes, only master can read!
+    int     getBestIslandIdx() const { return mBestIslandIdx; };
+    /// Get the best local solution index.
+    int     getBestLocalSolutionIdx() const {return mLocalBestSolutionIdx;};
 
+    /**
+     * Get best individual chromosome as a string, only master can call this function!
+     * @param [in] globalKnapsackData
+     * @return Best individual in from of a sting
+     */
+    std::string getBestIndividualStr(const GlobalKnapsackData* globalKnapsackData);
+
+    /**
+     * Calculate statistics - all islands must call this routine.
+     * @param [in] population - Population to calculate statistics at.
+     */
+    void    calculate(const Population* population);
+
+    /**
+     * Set best individual and max fitness for the local node
+     * @param [in] population - Population to find the best solution and set max index
+     */
+    void    setBestLocalIndividualAndMaxFintess(const Population* population);
+
+  protected:
+    /// Allocate Memory.
+    void allocateMemory();
+    /// Free Memory.
+    void freeMemory();
+
+    /**
+     * Calculate local stats.
+     * @param [in] population - Population to calculate statistics at.
+     */
+    void calculateLocalStatistics(const Population* population);
+    /// Calculate global stats.
+    void calculateGlobalStatistics();
+
+    /// Statistics data to exchange.
+    StatsDataToExchange  mStatDataBuffer;
+    /// Buffer to receive statistics.
+    StatsDataToExchange* mStatReceiveBuffer;
+
+    /// Derived statistics.
+    DerivedStats mDerivedStats;
+    /// Index to the local best solution.
+    int          mLocalBestSolutionIdx;
+    /// Best island (island with the best solution).
+    int          mBestIslandIdx;
+
+    /// Buffer for best solution coming over network.
+    Gene*        mReceiveIndividualBuffer;
+};// end of Statistics
+//----------------------------------------------------------------------------------------------------------------------
+
+#endif	/* STATISTICS_H */

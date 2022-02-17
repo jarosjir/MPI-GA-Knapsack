@@ -1,114 +1,93 @@
 /**
- * @file:       CPU_Population.h
- * @author	Jiri Jaros \n
- *   	 	Brno University of Technology \n
- *              Faculty of Information Technology \n
- *              
- *              and			\n
- * 
- *              The Australian National University	\n
- *              ANU College of Engineering & Computer Science	\n
+ * @file        Population.h
+ * @author      Jiri Jaros
+ *              Brno University of Technology
+ *              Faculty of Information Technology
  *
- * 		jarosjir@fit.vutbr.cz
- * 	        www.fit.vutbr.cz/~jarosjir
- * 
- * 
- * @brief 	Header file of the GA population
- *              
+ *              and
  *
- * 
- * @section	License
- *		This source code is distribute under OpenSource GNU GPL license
- *                
- *              If using this code, please consider citation of related papers
- *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
- *      
+ *              The Australian National University
+ *              ANU College of Engineering & Computer Science
  *
- * 
- * @version	1.0
- * @date	06 June      2012, 00:00 (created)
-		26 September 2013, 10:50 (revised)
+ *              jarosjir@fit.vutbr.cz
+ *              www.fit.vutbr.cz/~jarosjir
+ *
+ * @brief       Header file of the GA population
+ *
+ * @date        06 June      2012, 00:00 (created)
+ *              15 February  2022, 16:23 (revised)
+ *
+ * @copyright   Copyright (C) 2012 - 2022 Jiri Jaros.
+ *
+ * This source code is distribute under OpenSouce GNU GPL license.
+ * If using this code, please consider citation of related papers
+ * at http://www.fit.vutbr.cz/~jarosjir/pubs.php
  */
 
-
-
-#ifndef CPU_POPULATION_H
-#define	CPU_POPULATION_H
-
+#ifndef POPULATION_H
+#define	POPULATION_H
 
 #include <string>
 
 #include "GlobalKnapsackData.h"
 
-using namespace std;
-
 /**
- * @typedef TGene 
- * @brief Datatype for one gene 
+ * @typedef Gene
+ * @brief Datatype for one gene.
  */
-typedef unsigned int TGene;
+using Gene = unsigned int ;
 
 /**
- * @typedef TFitness
- * @brief Datatype fitness value
+ * @typedef Fitness
+ * @brief Datatype fitness value.
  */
-typedef float        TFitness;
-
+using Fitness = float;
 
 
 /**
- * @class TCPU_Population
+ * @class Population
  * @brief CPU version of GA Population
- * 
  */
-class TCPU_Population{
-public:
-    /// Number of chromosomes
-    int PopulationSize;      
-    /// Size of chromosome in INTs  
-    int ChromosomeSize;      
+class Population
+{
+  public:
+    /// Default constructor not allowed.
+    Population() = delete;
+    /// Constructor
+    Population(const int PopulationSize, const int ChromosomeSize);
+    /// Copy constructor not allowed.
+    Population(const Population& orig) = delete;
+    /// Destructor.
+    virtual ~Population();
 
-    /// 1D array of genes (chromosome-based encoding)
-    TGene    * Population;    
-    /// 1D array of fitness values
-    TFitness * Fitness;       
+    /// Assignment operator not allowed.
+    Population& operator=(const Population&) = delete;
 
-    /// Constructor  
-    TCPU_Population(const int PopulationSize, const int ChromosomeSize);
-        
-    /// Get string representation of chromosome
-    string GetStringOfChromosome(const int Idx);
+    /**
+     * Calculate fitness values of all chromosomes.
+     * @param [in] globalKnapsackData - Knapsack data.
+     */
+    void calculateFitness(const GlobalKnapsackData& globalKnapsackData);
     
-    /// Calculate fitness values of all chromosomes
-    void CalculateFitness(const TGlobalKnapsackData * GlobalKnapsackData);
-    
-    /// Calculate fitenss values of all chromosome, SSE4.1 version (works on Nehalem and newer cores)
-    void CalculateFitness_SSE(const TGlobalKnapsackData * GlobalKnapsackData);
+    /// Number of chromosomes.
+    int populationSize;
+    /// Size of chromosome in INTs.
+    int chromosomeSize;
 
-    
-    /// Destructor
-    virtual ~TCPU_Population();
+    /// 1D array of genes (chromosome-based encoding).
+    Gene*    population;
+    /// 1D array of fitness values.
+    Fitness* fitness;
 
-protected:
-    
-    /// Memory allocation
-    void AllocateMemory();
-    
-    /// Memory dealocation
-    void FreeMemory();
-   
-    
-private:
-    /// Default constructor not allowed
-    TCPU_Population();            
-    
-    /// Copy constructor not allowed
-    TCPU_Population(const TCPU_Population& orig);
-        
-};// end of TCPU_Population
-//------------------------------------------------------------------------------
+  protected:
 
+    /// Memory allocation.
+    void allocateMemory();
 
+    /// Memory deallocation.
+    void freeMemory();
 
-#endif	/* CPU_POPULATION_H */
+};// end of Population
+//----------------------------------------------------------------------------------------------------------------------
 
+#endif	/* POPULATION_H */

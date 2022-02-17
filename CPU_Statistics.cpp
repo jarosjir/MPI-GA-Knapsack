@@ -1,312 +1,282 @@
 /**
- * @file:       CPU_Statistics.cpp
- * @author	Jiri Jaros \n
- *   	 	Brno University of Technology \n
- *              Faculty of Information Technology \n
- *              
- *              and			\n
- * 
- *              The Australian National University	\n
- *              ANU College of Engineering & Computer Science	\n
+ * @file        Statistics.cpp
+ * @author      Jiri Jaros
+ *              Brno University of Technology
+ *              Faculty of Information Technology
  *
- * 		jarosjir@fit.vutbr.cz
- * 	        www.fit.vutbr.cz/~jarosjir
- * 
- * 
- * @brief 	Implementaion of  the GA statistics over islands
- *              
+ *              and
  *
- * 
- * @section	License
- *		This source code is distribute under OpenSource GNU GPL license
- *                
- *              If using this code, please consider citation of related papers
- *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
- *      
+ *              The Australian National University
+ *              ANU College of Engineering & Computer Science
  *
- * 
- * @version	1.0
- * @date	06 June      2012, 00:00 (created)
-		26 September 2013, 10:00 (revised)
+ *              jarosjir@fit.vutbr.cz
+ *              www.fit.vutbr.cz/~jarosjir
+ *
+ * @brief       Implementaion of  the GA statistics over islands
+ *
+ * @date        06 June      2012, 00:00 (created)
+ *              15 February  2022, 15:00 (revised)
+ *
+ * @copyright   Copyright (C) 2012 - 2022 Jiri Jaros.
+ *
+ * This source code is distribute under OpenSouce GNU GPL license.
+ * If using this code, please consider citation of related papers
+ * at http://www.fit.vutbr.cz/~jarosjir/pubs.php
  */
 
 
-#include <sstream>
+#include <mpi.h>
 #include <malloc.h>
 #include <limits.h>
-#include <math.h>
-#include <mpi.h>
+#include <cmath>
 
 #include "CPU_Statistics.h"
-#include "CPU_Statistics.h"
 
+//--------------------------------------------------------------------------------------------------------------------//
+//--------------------------------------------------- Definitions ----------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
-
-//----------------------------------------------------------------------------//
-//                              Definitions                                   //
-//----------------------------------------------------------------------------//
-
-
-
-//----------------------------------------------------------------------------//
-//                       TGPU_Statistics Implementation                       //
-//                              public methods                                //
-//----------------------------------------------------------------------------//
-
+//--------------------------------------------------------------------------------------------------------------------//
+//------------------------------------------------- Public methods ---------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
 /**
  * Constructor of the class
- * 
  */
-TCPU_Statistics::TCPU_Statistics()
+Statistics::Statistics()
+  : mStatReceiveBuffer(nullptr),
+    mLocalBestSolutionIdx(0),
+    mBestIslandIdx(0),
+    mReceiveIndividualBuffer(nullptr)
 {
-        
-    StatReceiveBuffer       = NULL;        
-    ReceiveIndividualBuffer = NULL;
-        
-    BestIslandIdx = 0;
-    
-    AllocateMemory();
-            
-}// end of TGPU_Population
-//------------------------------------------------------------------------------
-
+  allocateMemory();
+}// end of Statistics
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
  * Destructor of the class
- * 
- */
-TCPU_Statistics::~TCPU_Statistics()
-{
-    
-    FreeMemory();
-           
-}// end of ~TGPU_Population
-//------------------------------------------------------------------------------
-
-
-/**
- * Calculate Statistics
- * 
- * @param [in]  Population - Pointer to population to calculate statistics over 
- * 
- */    
-void TCPU_Statistics::Calculate(const TCPU_Population * Population)
-{
-    
-    
-    // Calculate local statistics
-    CalculateLocalStatistics(Population);
-   
-    const TParameters * Params = TParameters::GetInstance();
-        
-    
-    // Collect statistical data 
-    MPI_Gather(&StatDataBuffer   ,sizeof(StatDataBuffer),MPI_BYTE,
-                StatReceiveBuffer,sizeof(StatDataBuffer),MPI_BYTE, 0, MPI_COMM_WORLD);
-    
-    
-    // Collect Individuals (to have the best one)
-    MPI_Gather(&(Population->Population[LocalBestSolutionIdx*Params->ChromosomeSize()]), Params->ChromosomeSize(),MPI_UNSIGNED,
-                ReceiveIndividualBuffer                                                , Params->ChromosomeSize(),MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    
-    
-    // Only master calculates the global statistics
-    if (Params->IslandIdx() == 0) CalculateGlobalStatistics();
-            
-    
-}// end of Calculate
-//------------------------------------------------------------------------------
-
-
-/**
- * Print best individual as a string
  *
- * @param [in] GlobalKnapsackData
- * @return Best individual in from of a sting 
- */   
-string TCPU_Statistics::GetBestIndividualStr(const TGlobalKnapsackData * GlobalKnapsackData)
+ */
+Statistics::~Statistics()
 {
+  freeMemory();
+}// end of ~Statistics
+//----------------------------------------------------------------------------------------------------------------------
 
-    stringstream  S; 
-    
-    TParameters * Params = TParameters::GetInstance();
-    
-    TGene * BestIndividualStart = ReceiveIndividualBuffer + BestIslandIdx * Params->ChromosomeSize();
-    
-    // Convert by eight bits
-    for (int BlockID=0; BlockID < Params->ChromosomeSize() -1; BlockID++){
-     
-     for (int BitID = 0; BitID < Params->IntBlockSize() -1; BitID++ ) {         
-         char c = ((BestIndividualStart[BlockID] & (1 << BitID)) == 0) ? '0' : '1';         
-         S << c;
-         if (BitID % 8 ==7) S << " ";
-     }    
-         
-     S << "\n";
-     
+/**
+ * Calculate Statistics.
+ *
+ * @param [in] population - Pointer to population to calculate statistics over
+ */
+void Statistics::calculate(const Population* population)
+{
+  // Calculate local statistics
+  calculateLocalStatistics(population);
+
+  const Parameters& params = Parameters::getInstance();
+
+  // Collect statistical data
+  MPI_Gather(&mStatDataBuffer   , sizeof(mStatDataBuffer), MPI_BYTE,
+              mStatReceiveBuffer, sizeof(mStatDataBuffer), MPI_BYTE, 0, MPI_COMM_WORLD);
+
+
+  // Collect Individuals (to have the best one)
+  MPI_Gather(&(population->population[mLocalBestSolutionIdx * params.getChromosomeSize()]),
+             params.getChromosomeSize(),
+             MPI_UNSIGNED,
+             mReceiveIndividualBuffer,
+             params.getChromosomeSize(),
+             MPI_UNSIGNED,
+             0,
+             MPI_COMM_WORLD);
+
+  // Only master calculates the global statistics
+  if (params.getIslandIdx() == 0)
+  {
+    calculateGlobalStatistics();
   }
- 
- 
-     // Convert the remainder
-    for (int BitID = 0; BitID < Params->IntBlockSize() - (GlobalKnapsackData->NumberOfItems - GlobalKnapsackData->OriginalNumberOfItems); BitID++) {
-         char c =  ((BestIndividualStart[Params->ChromosomeSize() -1] & (1 << BitID)) == 0) ? '0' : '1';
-         S << c;
-         if (BitID % 8 ==7) S << " ";
-    }
-          
- 
- return S.str();   
-} // end of GetBestIndividualStr
-//------------------------------------------------------------------------------
+}// end of calculate
+//----------------------------------------------------------------------------------------------------------------------
 
-//----------------------------------------------------------------------------//
-//                       TLocalStatistics Implementation                       //
-//                              protected methods                             //
-//----------------------------------------------------------------------------//
+/**
+ * Print best individual as a string.
+ */
+std::string Statistics::getBestIndividualStr(const GlobalKnapsackData* globalKnapsackData)
+{
+ // Lambda function to convert 1 int into a bit string
+  auto convertIntToBitString= [] (Gene value, int nValidDigits) -> std::string
+  {
+    std::string str = "";
+
+    for (int bit = 0; bit < nValidDigits; bit++)
+    {
+      str += ((value & (1 << bit)) == 0) ? "0" : "1";
+      str += (bit % 8 == 7) ? " " : "";
+    }
+
+    for (int bit = nValidDigits; bit < 32; bit++)
+    {
+      str += 'x';
+      str += (bit % 8 == 7) ? " " : "";
+    }
+
+    return str;
+  };// end of convertIntToBitString
+
+
+  const Parameters& params = Parameters::getInstance();
+
+  const Gene* bestIndividual = mReceiveIndividualBuffer + mBestIslandIdx * params.getChromosomeSize();
+
+  std::string bestChromozome = "";
+
+  const int nBlocks = globalKnapsackData->originalNumberOfItems / 32;
+
+  for (int blockId = 0; blockId < nBlocks; blockId++)
+  {
+    bestChromozome += convertIntToBitString(bestIndividual[blockId], 32) + "\n";
+  }
+
+  // Reminder
+  if (globalKnapsackData->originalNumberOfItems % 32 > 0 )
+  {
+    bestChromozome += convertIntToBitString(bestIndividual[nBlocks],
+                                            globalKnapsackData->originalNumberOfItems % 32);
+  }
+
+ return bestChromozome;
+} // end of getBestIndividualStr
+//----------------------------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------------------------//
+//----------------------------------------------- Protected methods --------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
 /**
  * Allocate memory
  */
-void TCPU_Statistics::AllocateMemory()
+void Statistics::allocateMemory()
 {
-    
-    
-    TParameters*  Params = TParameters::GetInstance();
-    
-    // Allocate MPI buffers for stat data and best individual
-    if (Params->IslandIdx() == 0) {
-      StatReceiveBuffer          = (TStatDataToExchange *) memalign(16, sizeof(TStatDataToExchange) * Params->IslandCount());          
-      ReceiveIndividualBuffer    = (TGene *)               memalign(16, sizeof(TGene)  * Params->ChromosomeSize()* Params->IslandCount());
-    }
-        
-    
-}// end of AllocateMemory
-//------------------------------------------------------------------------------
+  const Parameters& params = Parameters::getInstance();
+
+  // Allocate MPI buffers for stats data and best individual
+  if (params.getIslandIdx() == 0)
+  {
+    mStatReceiveBuffer       = (StatsDataToExchange *) memalign(64,
+                                                                sizeof(StatsDataToExchange) * params.getIslandCount());
+    mReceiveIndividualBuffer = (Gene *)                memalign(64,
+                                                                sizeof(Gene) * params.getChromosomeSize() *
+                                                                params.getIslandCount());
+  }
+}// end of allocateMemory
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
  * Free GPU memory
  */
-void TCPU_Statistics::FreeMemory()
+void Statistics::freeMemory()
 {
-       
-    if (StatReceiveBuffer){
-        free(StatReceiveBuffer);       
-        StatReceiveBuffer = NULL;
-    }
-    if (ReceiveIndividualBuffer){
-        free(ReceiveIndividualBuffer);
-        ReceiveIndividualBuffer = NULL;
-    }
-    
-}// end of FreeMemory
-//------------------------------------------------------------------------------
-    
-    
+  if (mStatReceiveBuffer)
+  {
+    free(mStatReceiveBuffer);
+    mStatReceiveBuffer = nullptr;
+  }
+  if (mReceiveIndividualBuffer)
+  {
+    free(mReceiveIndividualBuffer);
+    mReceiveIndividualBuffer = nullptr;
+  }
+
+}// end of freeMemory
+//----------------------------------------------------------------------------------------------------------------------
+
+
 /**
  * Calculate local statistics
- * 
- * @param [in] Population - Calculate local statistics over population
- * 
  */
-void TCPU_Statistics::CalculateLocalStatistics(const TCPU_Population * Population)
+void Statistics::calculateLocalStatistics(const Population* population)
 {
-   
-    // initialize values
-    StatDataBuffer.MinFitness = TFitness(UINT_MAX);
-    StatDataBuffer.MaxFitness = TFitness(0);
-    
-    StatDataBuffer.SumFitness = 0.0f;
-    StatDataBuffer.Sum2Fitness= 0.0f;   
-    
-    LocalBestSolutionIdx  = 0;         
-    
-    // Calculate statistics
-    for (int i = 0; i < Population->PopulationSize; i++){
-        if (StatDataBuffer.MaxFitness < Population->Fitness[i]){
-            StatDataBuffer.MaxFitness = Population->Fitness[i];
-            LocalBestSolutionIdx = i;
-        }
-        if (StatDataBuffer.MinFitness > Population->Fitness[i]){
-            StatDataBuffer.MinFitness = Population->Fitness[i];            
-        }
-        StatDataBuffer.SumFitness  +=  Population->Fitness[i];
-        StatDataBuffer.Sum2Fitness += (Population->Fitness[i]) * (Population->Fitness[i]);                
+  // initialize values
+  mStatDataBuffer.maxFitness = Fitness(0);
+  mStatDataBuffer.minFitness = Fitness(UINT_MAX);
+
+  mStatDataBuffer.sumFitness = 0.0f;
+  mStatDataBuffer.sum2Fitness= 0.0f;
+
+  mLocalBestSolutionIdx  = 0;
+
+  // Calculate statistics
+  for (int individualIdx = 0; individualIdx < population->populationSize; individualIdx++)
+  {
+    if (mStatDataBuffer.maxFitness < population->fitness[individualIdx])
+    {
+      mStatDataBuffer.maxFitness = population->fitness[individualIdx];
+      mLocalBestSolutionIdx = individualIdx;
     }
-    
-    
-}// end of CalculateLocalStatistics
-//------------------------------------------------------------------------------
-    
+
+    mStatDataBuffer.minFitness = std::min(mStatDataBuffer.minFitness, population->fitness[individualIdx]);
+
+    mStatDataBuffer.sumFitness  +=  population->fitness[individualIdx];
+    mStatDataBuffer.sum2Fitness += (population->fitness[individualIdx]) * (population->fitness[individualIdx]);
+  }
+}// end of calculateLocalStatistics
+//----------------------------------------------------------------------------------------------------------------------
+
 /**
  * Calculate global statistics
  */
-void TCPU_Statistics::CalculateGlobalStatistics()
+void Statistics::calculateGlobalStatistics()
 {
-     
- BestIslandIdx = 0;
- 
- 
- // initialize values
- StatDataBuffer.MaxFitness  = StatReceiveBuffer[0].MaxFitness;
- StatDataBuffer.MinFitness  = StatReceiveBuffer[0].MinFitness;
- StatDataBuffer.SumFitness  = StatReceiveBuffer[0].SumFitness;
- StatDataBuffer.Sum2Fitness = StatReceiveBuffer[0].Sum2Fitness;
- 
- TParameters * Params = TParameters::GetInstance();
- 
+  mBestIslandIdx = 0;
+
+  // initialize values
+  mStatDataBuffer.maxFitness  = mStatReceiveBuffer[0].maxFitness;
+  mStatDataBuffer.minFitness  = mStatReceiveBuffer[0].minFitness;
+  mStatDataBuffer.sumFitness  = mStatReceiveBuffer[0].sumFitness;
+  mStatDataBuffer.sum2Fitness = mStatReceiveBuffer[0].sum2Fitness;
+
+   const Parameters& params = Parameters::getInstance();
+
   // Calculate numeric stats over receiving buffer
-  for (int i = 1 ;  i < Params->IslandCount(); i++){      
-      
+  for (int islandIdx = 1;  islandIdx < params.getIslandCount(); islandIdx++)
+  {
+    if (mStatDataBuffer.maxFitness < mStatReceiveBuffer[islandIdx].maxFitness)
+    {
+      mStatDataBuffer.maxFitness = mStatReceiveBuffer[islandIdx].maxFitness;
+      mBestIslandIdx = islandIdx;
+    }
 
-      if (StatDataBuffer.MaxFitness < StatReceiveBuffer[i].MaxFitness) {
-          StatDataBuffer.MaxFitness = StatReceiveBuffer[i].MaxFitness;
-          BestIslandIdx = i;
-      }
-      
-      if (StatDataBuffer.MinFitness > StatReceiveBuffer[i].MinFitness) {
-          StatDataBuffer.MinFitness = StatReceiveBuffer[i].MinFitness;
-      }
-      
-      StatDataBuffer.SumFitness  +=  StatReceiveBuffer[i].SumFitness;
-      StatDataBuffer.Sum2Fitness +=  StatReceiveBuffer[i].Sum2Fitness;
+    mStatDataBuffer.minFitness = std::min(mStatDataBuffer.minFitness, mStatReceiveBuffer[islandIdx].minFitness);
 
+    mStatDataBuffer.sumFitness  +=  mStatReceiveBuffer[islandIdx].sumFitness;
+    mStatDataBuffer.sum2Fitness +=  mStatReceiveBuffer[islandIdx].sum2Fitness;
   } // for
-    
 
- 
  // Calculate derived statistics
- DerivedStats.AvgFitness = StatDataBuffer.SumFitness / (Params->PopulationSize() * Params->IslandCount());
- DerivedStats.Divergence = sqrtf(fabsf( (StatDataBuffer.Sum2Fitness / (Params->PopulationSize() * Params->IslandCount()) -
-                                         DerivedStats.AvgFitness * DerivedStats.AvgFitness))
-                           );
- 
- 
- 
-}// end of CalculateGlobalStatistics
-//------------------------------------------------------------------------------
-
+ const int nIndividuals = params.getPopulationSize() * params.getIslandCount();
+ mDerivedStats.avgFitness = mStatDataBuffer.sumFitness / nIndividuals;
+ mDerivedStats.divergence = sqrt(fabs((mStatDataBuffer.sum2Fitness / nIndividuals) -
+                                      (mDerivedStats.avgFitness * mDerivedStats.avgFitness)));
+}// end of calculateGlobalStatistics
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
  * Set ONLY best individual Idx and its fitness to statistics
- * @param [in] Population to find the best solution and set max index
- * 
  */
-void  TCPU_Statistics::SetBestLocalIndividualAndMaxFintess(const TCPU_Population * Population)
+void  Statistics::setBestLocalIndividualAndMaxFintess(const Population* population)
 {
-    
-    StatDataBuffer.MaxFitness = TFitness(0);
-        
-    LocalBestSolutionIdx  = 0;         
-    
-    // Find the best insladn
-    for (int i = 0; i < Population->PopulationSize; i++){
-        if (StatDataBuffer.MaxFitness < Population->Fitness[i]){
-            StatDataBuffer.MaxFitness = Population->Fitness[i];
-            LocalBestSolutionIdx = i;
-        }        
+  mStatDataBuffer.maxFitness = Fitness(0);
+
+  mLocalBestSolutionIdx = 0;
+
+  // Find the best island
+  for (int individualIdx = 0; individualIdx < population->populationSize; individualIdx++)
+  {
+    if (mStatDataBuffer.maxFitness < population->fitness[individualIdx])
+    {
+      mStatDataBuffer.maxFitness = population->fitness[individualIdx];
+      mLocalBestSolutionIdx      = individualIdx;
     }
-    
- 
-}// end of SetBestLocalIndividualAndMaxFintess
-//------------------------------------------------------------------------------
+  }
+}// end of setBestLocalIndividualAndMaxFintess
+//----------------------------------------------------------------------------------------------------------------------

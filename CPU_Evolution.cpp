@@ -1,39 +1,29 @@
 /**
- * @file:       CPU_Evolution.cpp
- * @author	Jiri Jaros \n
- *   	 	Brno University of Technology \n
- *              Faculty of Information Technology \n
- *              
- *              and			\n
- * 
- *              The Australian National University	\n
- *              ANU College of Engineering & Computer Science	\n
+ * @file        Evolution.cpp
+ * @author      Jiri Jaros
+ *              Brno University of Technology
+ *              Faculty of Information Technology
  *
- * 		jarosjir@fit.vutbr.cz
- * 	        www.fit.vutbr.cz/~jarosjir
- * 
- * 
- * @brief 	Implementaion of the island based GA
- *              
+ *              and
  *
- * 
- * @section	License
- *		This source code is distribute under OpenSource GNU GPL license
- *                
- *              If using this code, please consider citation of related papers
- *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
- *      
+ *              The Australian National University
+ *              ANU College of Engineering & Computer Science
  *
- * 
- * @version	1.0
- * @date	06 June      2012, 00:00 (created)
-		26 September 2013, 11:10 (revised)
+ *              jarosjir@fit.vutbr.cz
+ *              www.fit.vutbr.cz/~jarosjir
+ *
+ * @brief       Implementation file  of the island based GA
+ *
+ * @date        06 June      2012, 00:00 (created)
+ *              15 February  2022, 16:51 (revised)
+ *
+ * @copyright   Copyright (C) 2012 - 2022 Jiri Jaros.
+ *
+ * This source code is distribute under OpenSouce GNU GPL license.
+ * If using this code, please consider citation of related papers
+ * at http://www.fit.vutbr.cz/~jarosjir/pubs.php
  */
- 
 
-
-#include <iostream>
-#include <stdio.h>
 #include <limits.h>
 #include <string.h>
 #include <mpi.h>
@@ -50,617 +40,600 @@ using namespace r123;
 
 /**
   * @typedef RNG_4x32
-  * @brief four 32b values given by the Philox random generator
+  * @brief four 32b values given by the Philox random generator.
   */
-typedef r123::Philox4x32 RNG_4x32;
+using RNG_4x32 = r123::Philox4x32 ;
 
 /**
   * @typedef RNG_2x32
-  * @brief two 32b values given by the Philox random generator
+  * @brief two 32b values given by the Philox random generator.
   */
-typedef r123::Philox2x32 RNG_2x32;
+using RNG_2x32 = r123::Philox2x32;
 
 
+//--------------------------------------------------------------------------------------------------------------------//
+//--------------------------------------------------- Definitions ----------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
-//----------------------------------------------------------------------------//
-//                              Definitions                                   //
-//----------------------------------------------------------------------------//
-
-/// MPI tag for sending data on the ring to the left
-const int MPI_TAG_DATA_LEFT  = 100;
-/// MPI tag for sending data on the ring to the right
-const int MPI_TAG_DATA_RIGHT = 101;
-
-//----------------------------------------------------------------------------//
-//                              Implementation                                //
-//                              public methods                                //
-//----------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
+//------------------------------------------------- Public methods ---------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
 /**
- * Constructor of the class
- * 
- * @param [in] argc
- * @param [in] argv
+ * Constructor of the class.
  */
-TCPU_Evolution::TCPU_Evolution(int argc, char **argv)
+Evolution::Evolution(int argc, char **argv)
+  : mParams(Parameters::getInstance())
 {
-        
-    // Create parameters    
-    Params  = TParameters::GetInstance();
+  // Read parameters from command line
+  mParams.parseCommandline(argc,argv);
 
-    // Read parameters from command line
-    Params->LoadParametersFromCommandLine(argc,argv);  
-    
-    // Load data from input file
-    GlobalData.LoadFromFile();    
-    Params->PrintAllParameters();
-    
-    // Create populations
-    MasterPopulation    = new TCPU_Population(Params->PopulationSize(), Params->ChromosomeSize());    
-    OffspringPopulation = new TCPU_Population(Params->OffspringPopulationSize(), Params->ChromosomeSize());
-    
-    EmigrantsToSend     = new TCPU_Population(Params->EmigrantCount(), Params->ChromosomeSize());
-    EmigrantsToReceive  = new TCPU_Population(Params->EmigrantCount(), Params->ChromosomeSize());
-    
-    // create Statostics
-    CPUStatistics       = new TCPU_Statistics();
-    
-    ActGeneration = 0;
-  
-    
-}// end of TGPU_Evolution
-//------------------------------------------------------------------------------
-  
+  // Load data from input file
+  mGlobalData.loadFromFile();
+  mParams.printAllParameters();
+
+  // Create populations
+  mMasterPopulation    = new Population(mParams.getPopulationSize(), mParams.getChromosomeSize());
+  mOffspringPopulation = new Population(mParams.getOffspringPopulationSize(), mParams.getChromosomeSize());
+
+  mEmigrantsToSend     = new Population(mParams.getEmigrantCount(), mParams.getChromosomeSize());
+  mEmigrantsToReceive  = new Population(mParams.getEmigrantCount(), mParams.getChromosomeSize());
+
+  // create Statistics
+  mStatistics          = new Statistics();
+
+  mActGeneration = 0;
+}// end of Evolution
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
  * Destructor of the class
  */
-TCPU_Evolution::~TCPU_Evolution()
+Evolution::~Evolution()
 {
-    
-    delete MasterPopulation;    
-    delete OffspringPopulation;
-            
-    delete EmigrantsToSend;
-    delete EmigrantsToReceive;
-    
-    delete CPUStatistics;
-    
+  delete mMasterPopulation;
+  delete mOffspringPopulation;
+
+  delete mEmigrantsToSend;
+  delete mEmigrantsToReceive;
+
+  delete mStatistics;
 }// end of Destructor
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
- * Run Evolution
+ * Run Evolution.
  */
-void TCPU_Evolution::Run()
+void Evolution::run()
 {
-    
-    Initialize();
-    
-    RunEvolutionCycle();
-    
-}// end of Run
-//------------------------------------------------------------------------------
+  initialize();
+
+  runEvolutionCycle();
+}// end of run
+//----------------------------------------------------------------------------------------------------------------------
 
 
-//----------------------------------------------------------------------------//
-//                              Implementation                                //
-//                              protected methods                             //
-//----------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
+//----------------------------------------------- Protected methods --------------------------------------------------//
+//--------------------------------------------------------------------------------------------------------------------//
 
 /**
- * Initialization evolution
+ * Get seed for random generator.
+ * @return Seed for r123 generator.
  */
-void TCPU_Evolution::Initialize()
+r123Seed Evolution::getSeed()
 {
-            
-   ActGeneration = 0;
-      
-   GenerateFirstPopulation(); 
-       
-   MasterPopulation->CalculateFitness_SSE(&GlobalData);
-   
-}// end of TGPU_Evolution
-//------------------------------------------------------------------------------
+  struct r123Seed seed;
+  struct timeval  tp1;
 
+  gettimeofday(&tp1, nullptr);
 
-/**
- * Get seed for random generator 
- * return seed for r123 generator
- */
-r123_seed TCPU_Evolution::GetSeed() 
-{                
-      
-  struct r123_seed seed;
-  struct timeval tp1;  
-  
-  gettimeofday(&tp1, NULL);
-  
-  // use time in seconds divided by IslandID and 
-  seed.seed1 = (unsigned long) (tp1.tv_sec) ;
-  seed.seed2 = (unsigned long) tp1.tv_usec;
-  
-        
+  // use time in seconds divided by IslandID and
+  seed.seed1 = static_cast<unsigned long>(tp1.tv_sec);
+  seed.seed2 = static_cast<unsigned long>(tp1.tv_usec);
+
+  /*seed.seed1 = static_cast<unsigned long>(0);
+  seed.seed2 = static_cast<unsigned long>(0);*/
+
   return seed;
-}// end of GetSeed
-//------------------------------------------------------------------------------
+}// end of getSeed
+//----------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Initialization evolution.
+ */
+void Evolution::initialize()
+{
+   generateFirstPopulation();
+
+   mMasterPopulation->calculateFitness(mGlobalData);
+}// end of initialize
+//----------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Run evolutionary cycle for defined number of generations.
+ */
+void Evolution::runEvolutionCycle()
+{
+  // Execute N generations
+  for (mActGeneration = 1; mActGeneration < mParams.getNumOfGenerations(); mActGeneration++)
+  {
+
+   /* mMasterPopulation->printPopulation();
+    if (isMaster())
+    {
+      printf("xxxxxxxxxxxxxxxxxxxxxxxx\n");
+    }*/
+    // If it's time for migration then migrate
+    if (mActGeneration % mParams.getMigrationInterval() == 0)
+    {
+      migrate();
+    }
+
+    // Create new population
+    geneticManipulation();
+
+    // Evaluate fitness
+    mOffspringPopulation->calculateFitness(mGlobalData);
+
+    // Merge populations together
+    replacement();
+
+    // If necessary, calculate and print statistics
+    if (mActGeneration % mParams.getStatisticsInterval() == 0)
+    {
+      mStatistics->calculate(mMasterPopulation);
+
+      if (isMaster())
+      {
+        printf("Generation %6d, BestIsland %d, MaxFitness %6f, MinFitness %6f, AvgFitness %6f, Diver %6f \n",
+               mActGeneration, mStatistics->getBestIslandIdx(),
+               mStatistics->getMaxFitness(), mStatistics->getMinFitness(),
+               mStatistics->getAvgFitness(), mStatistics->getDivergence());
+
+        if (mParams.getPrintBest())
+        {
+          printf("%s\n", mStatistics->getBestIndividualStr(&mGlobalData).c_str());
+        }
+      }
+    } // print stats
+  }// for actGeneration
 
 
+  // After evolution has finished
+  mStatistics->calculate(mMasterPopulation);
+
+  if (isMaster())
+  {
+    printf("---------------------------------------------------------------------------------------------\n");
+    printf("BestIsland %d, FinalMaxFitness %6f, FinalMinFitness %6f, FinalAvgFitness %6f, FinalDiver %6f \n",
+           mStatistics->getBestIslandIdx(),
+           mStatistics->getMaxFitness(), mStatistics->getMinFitness(),
+           mStatistics->getAvgFitness(), mStatistics->getDivergence());
+
+
+    printf("Best solution: \n");
+    printf("%s\n", mStatistics->getBestIndividualStr(&mGlobalData).c_str());
+  }
+}// end of runEvolutionCycle
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
  * Generate first population
  */
-void TCPU_Evolution::GenerateFirstPopulation()
+void Evolution::generateFirstPopulation()
 {
-  
-   const int PopulationDim = MasterPopulation->ChromosomeSize * MasterPopulation->PopulationSize;
+  // Total number of genes
+  const int nGenes = mMasterPopulation->chromosomeSize * mMasterPopulation->populationSize;
 
-   // Init Random generator
-   RNG_4x32  rng_4x32;    
-   RNG_4x32::key_type key    ={{Params->IslandIdx(),0xcaffe123}};
-   RNG_4x32::ctr_type counter={{0, GetSeed().seed1 ,GetSeed().seed2 ,0xbeeff000}};
-   RNG_4x32::ctr_type RandomValues;
+  // Init Random generator
+  RNG_4x32  rng_4x32;
+  RNG_4x32::key_type key     = {{uint32_t(mParams.getIslandIdx()), 0xcaffe123}};
+  RNG_4x32::ctr_type counter = {{0, getSeed().seed1 ,getSeed().seed2 ,0xbeeff000}};
+  RNG_4x32::ctr_type randomValues;
 
 
-    // Randomly init  genes, 4x unroll 
-   for (int i = 0; i < (PopulationDim >> 2) << 2; i+=4){       
-       counter.incr();
-       RandomValues = rng_4x32(counter, key);    
+  // Randomly init  genes, 4x unroll
+  for (int i = 0; i < (nGenes >> 2) << 2; i+=4)
+  {
+    counter.incr();
+    randomValues = rng_4x32(counter, key);
 
-       MasterPopulation->Population[i]   = RandomValues.v[0];
-       MasterPopulation->Population[i+1] = RandomValues.v[1];
-       MasterPopulation->Population[i+2] = RandomValues.v[2];
-       MasterPopulation->Population[i+3] = RandomValues.v[3];              
+    mMasterPopulation->population[i]     = randomValues.v[0];
+    mMasterPopulation->population[i + 1] = randomValues.v[1];
+    mMasterPopulation->population[i + 2] = randomValues.v[2];
+    mMasterPopulation->population[i + 3] = randomValues.v[3];
    }
 
-
-   
-   // Init the rest 
+   // Init the rest
     counter.incr();
-    RandomValues = rng_4x32(counter, key);    
+    randomValues = rng_4x32(counter, key);
 
-    int IDX = 0;
-    for (int i = (PopulationDim >> 2) <<2; i < PopulationDim; i++){            
-         MasterPopulation->Population[i]   = RandomValues.v[IDX];       
-         IDX++;   
-    }    
-
-
-
-   // init fitness values
-   for (int i = 0; i < MasterPopulation->PopulationSize; i++){       
-       MasterPopulation->Fitness[i] = TFitness(0);
-   } 
-
-}// end of GenerateFirstPopulation
-//------------------------------------------------------------------------------
-
-
-
-
-
-/**
- * Run evolutionary cycle for defined number of generations
- * 
- */
-void TCPU_Evolution::RunEvolutionCycle()
-{
-    
-    // Execute N generations
-    for (ActGeneration = 1; ActGeneration < Params->NumOfGenerations(); ActGeneration++) {
-
-        // If it's time for migration then migrate
-        if (ActGeneration % Params->MigrationInterval() == 0) {            
-            Migrate();
-        }
-        
-        // Create new population
-        GeneticManipulation();
-        
-        // Evaluate fitness
-        OffspringPopulation->CalculateFitness_SSE(&GlobalData);       
-        
-        
-        // Merge populations together
-        Replacement();
-
-        // if necessary, calculate and print statistics   
-        if (ActGeneration % Params->StatisticsInterval() == 0){
-              CPUStatistics->Calculate(MasterPopulation);
-             
-              if (IsMaster()) {
-                printf("Generation %6d, BestIsland %d, MaxFitness %6f, MinFitness %6f, AvgFitness %6f, Diver %6f \n", 
-                        ActGeneration, CPUStatistics->GetBestIslandIdx(),
-                        CPUStatistics->GetMaxFitness(), CPUStatistics->GetMinFitness(),
-                        CPUStatistics->GetAvgFitness(), CPUStatistics->GetDivergence());
-              
-                if (Params->GetPrintBest())  printf("%s\n", CPUStatistics->GetBestIndividualStr(&GlobalData).c_str());
-              }  
-          }
-                  
-    }// for ActGeneration
-
-    
-    //-- After evolution has finished --//                  
-    CPUStatistics->Calculate(MasterPopulation);
-
-    if (IsMaster()){
-        printf("---------------------------------------------------------------------------------------------\n");
-        printf("BestIsland %d, FinalMaxFitness %6f, FinalMinFitness %6f, FinalAvgFitness %6f, FinalDiver %6f \n", 
-              CPUStatistics->GetBestIslandIdx(),
-              CPUStatistics->GetMaxFitness(), CPUStatistics->GetMinFitness(),
-              CPUStatistics->GetAvgFitness(), CPUStatistics->GetDivergence());
-        
-           
-       printf("Best solution: \n");
-       printf("%s\n", CPUStatistics->GetBestIndividualStr(&GlobalData).c_str());
+    int idx = 0;
+    for (int i = (nGenes >> 2) << 2; i < nGenes; i++)
+    {
+      mMasterPopulation->population[i] = randomValues.v[idx];
+      idx++;
     }
 
-    
-}// end of RunEvolutionCycle
-//------------------------------------------------------------------------------
-    
+   // init fitness values
+   for (int i = 0; i < mMasterPopulation->populationSize; i++)
+   {
+      mMasterPopulation->fitness[i] = Fitness(0);
+   }
+}// end of generateFirstPopulation
+//----------------------------------------------------------------------------------------------------------------------
+
 /**
- * Genetic manipulation
- * 
- */    
-void TCPU_Evolution::GeneticManipulation()
+ * Genetic manipulation.
+ */
+void Evolution::geneticManipulation()
 {
-    
-    
-    const TParameters * Params = TParameters::GetInstance();
-    
-        
-    //-- Init Random --//
-    RNG_4x32  rng_4x32;    
-    RNG_4x32::key_type key    ={{Params->IslandIdx(), 0}};
-    RNG_4x32::ctr_type counter={{0, 0xabcd1234,GetSeed().seed1, GetSeed().seed2 }};
-    RNG_4x32::ctr_type RandomValues;
+  // Init random generator
+  RNG_4x32  rng_4x32;
+  RNG_4x32::key_type key     = {{uint32_t(mParams.getIslandIdx()), 0}};
+  RNG_4x32::ctr_type counter = {{0, 0xabcd1234, getSeed().seed1, getSeed().seed2 }};
+  RNG_4x32::ctr_type randomValues;
 
-    // go over master population
-    for (int ChromosomeIdx = 0; ChromosomeIdx < Params->OffspringPopulationSize(); ChromosomeIdx+=2){
+  // Go over master population
+  for (int chromosomeIdx = 0; chromosomeIdx < mParams.getOffspringPopulationSize(); chromosomeIdx += 2)
+  {
+    //------------------------------------------------- Selection ----------------------------------------------------//
+    counter.incr();
+    randomValues = rng_4x32(counter, key);
 
-        //--------------------------------------------------------------------//
-        //---------------------------- Selection -----------------------------//
-        //--------------------------------------------------------------------//
+    unsigned int parent1Idx = selection(mMasterPopulation, randomValues.v[0], randomValues.v[1]);
+    unsigned int parent2Idx = selection(mMasterPopulation, randomValues.v[2], randomValues.v[3]);
+
+
+    counter.incr();
+    randomValues = rng_4x32(counter, key);
+
+   if ( randomValues.v[0] < mParams.getCrossoverUintBoundary())
+   {
+    //-------------------------------------------------- Crossover ---------------------------------------------------//
+    int geneIdxMod4 = 0;
+
+    for (int geneIdx = 0; geneIdx < mParams.getChromosomeSize(); geneIdx++ )
+    {
+      const Gene parent1Genes = mMasterPopulation->population[parent1Idx * mParams.getChromosomeSize() + geneIdx];
+      const Gene parent2Genes = mMasterPopulation->population[parent2Idx * mParams.getChromosomeSize() + geneIdx];
+
+      Gene offspring1Genes = 0;
+      Gene offspring2Genes = 0;
+
+      RNG_4x32::ctr_type randomValueForMutation1;
+      RNG_4x32::ctr_type randomValueForMutation2;
+
+      if (geneIdxMod4 == 4)
+      {
+        geneIdxMod4 = 0;
         counter.incr();
-        RandomValues = rng_4x32(counter, key);
+        randomValues = rng_4x32(counter, key);
+      }
 
-        unsigned int Parent1_Idx = Selection(MasterPopulation, RandomValues.v[0], RandomValues.v[1]);                        
-        unsigned int Parent2_Idx = Selection(MasterPopulation, RandomValues.v[2], RandomValues.v[3]);
+      // crossover
+      crossoverUniformFlip(offspring1Genes,
+                           offspring2Genes,
+                           parent1Genes,
+                           parent2Genes,
+                           randomValues.v[geneIdxMod4]);
+      geneIdxMod4++;
 
-        
+      //-------------------------------------------------- Mutation --------------------------------------------------//
+      for (int bitIdx = 0; bitIdx < mParams.getIntBlockSize(); bitIdx += 4)
+      {
         counter.incr();
-        RandomValues = rng_4x32(counter, key);
+        randomValueForMutation1 = rng_4x32(counter, key);
 
-        if ( RandomValues.v[0] < Params->CrossoverUINTBoundary()) {
-        //--------------------------------------------------------------------//
-        //------------------------ Crossover ---------------------------------//
-        //--------------------------------------------------------------------//
-            int GeneMod4Idx = 0;
-
-            for ( int GeneIdx = 0; GeneIdx < Params->ChromosomeSize(); GeneIdx++ ){
-                TGene GeneParent1 = MasterPopulation->Population[Parent1_Idx * Params->ChromosomeSize() + GeneIdx];
-                TGene GeneParent2 = MasterPopulation->Population[Parent2_Idx * Params->ChromosomeSize() + GeneIdx];
-
-                TGene GeneOffspring1 = 0;
-                TGene GeneOffspring2 = 0;
-
-
-                RNG_4x32::ctr_type RandomForMutation1;
-                RNG_4x32::ctr_type RandomForMutation2;
-
-                if (GeneMod4Idx == 4) {
-                    GeneMod4Idx = 0;
-                    counter.incr();
-                    RandomValues = rng_4x32(counter, key);
-                }
-                 // crossover
-                CrossoverUniformFlip(GeneOffspring1, GeneOffspring2, GeneParent1, GeneParent2, RandomValues.v[GeneMod4Idx]);
-                GeneMod4Idx++;
-
-
-                for (int BitID = 0; BitID < Params->IntBlockSize(); BitID+=4){                    
-
-                    counter.incr();            
-                    RandomForMutation1 = rng_4x32(counter, key);
-
-                    counter.incr();
-                    RandomForMutation2 = rng_4x32(counter, key);                        
-
-
-                    for (int i = 0; i < 4 ; i++){                    
-                        // mutation
-                        MutationBitFlip(GeneOffspring1, GeneOffspring2, RandomForMutation1.v[i],RandomForMutation2.v[i], BitID+i);
-                    }
-                 }// mutation   
-
-                 OffspringPopulation->Population[ChromosomeIdx     * Params->ChromosomeSize() + GeneIdx] = GeneOffspring1;
-                 OffspringPopulation->Population[(ChromosomeIdx+1) * Params->ChromosomeSize() + GeneIdx] = GeneOffspring2;
-
-              }
-       //------------------------------------------------------------------------//
-       //-------------------------- Cloning  ------------------------------------//
-       //------------------------------------------------------------------------//
-        }else {  //-- Go through two chromosomes and do uniform crossover --//
-                for (int GeneIdx = 0; GeneIdx < Params->ChromosomeSize(); GeneIdx++ ){
-                TGene GeneOffspring1 = MasterPopulation->Population[Parent1_Idx * Params->ChromosomeSize() + GeneIdx];
-                TGene GeneOffspring2 = MasterPopulation->Population[Parent2_Idx * Params->ChromosomeSize() + GeneIdx];
-
-                RNG_4x32::ctr_type RandomForMutation1;
-                RNG_4x32::ctr_type RandomForMutation2;
-
-
-                for (int BitID = 0; BitID < Params->IntBlockSize(); BitID+=4){
-
-                    counter.incr();            
-                    RandomForMutation1 = rng_4x32(counter, key);
-
-                    counter.incr();
-                    RandomForMutation2 = rng_4x32(counter, key);                        
-
-                    for (int i = 0; i < 4 ; i++){
-                        // mutation
-                        MutationBitFlip(GeneOffspring1, GeneOffspring2, RandomForMutation1.v[i],RandomForMutation2.v[i], BitID+i);
-                    }
-                 }// one cloning
-                OffspringPopulation->Population[ChromosomeIdx     * Params->ChromosomeSize() + GeneIdx] = GeneOffspring1;
-                OffspringPopulation->Population[(ChromosomeIdx+1) * Params->ChromosomeSize() + GeneIdx] = GeneOffspring2;
-
-            }// for 1 id            
-        }      
-
-
-        OffspringPopulation->Fitness[ChromosomeIdx]   = 0.0f;
-        OffspringPopulation->Fitness[ChromosomeIdx+1] = 0.0f;
-
-    }// for individuals        
-   
-}// end of GeneticManipulation
-//------------------------------------------------------------------------------
-
-
-
-/**
- * Binary tournament selection
- * 
- * @param [in] ParentsData - Parent Population
- * @param [in] Random1   - Frist Random value
- * @param [in] Random2   - Second Random value 
- * 
- * @return Selected chrromosome idx
- */
-unsigned int TCPU_Evolution::Selection(const TCPU_Population * ParentsData, const unsigned int Random1, const unsigned int Random2)
-{
-            
-    unsigned int Idx1 = Random1 % (ParentsData->PopulationSize);
-    unsigned int Idx2 = Random2 % (ParentsData->PopulationSize);
-    
-    return (ParentsData->Fitness[Idx1] > ParentsData->Fitness[Idx2]) ? Idx1 : Idx2;
-}// Selection
-//------------------------------------------------------------------------------
-
-
-/**
- * Flip bites of parents to produce parents
- * 
- * @param [out] GeneOffspring1
- * @param [out] GeneOffspring2
- * @param [in] GeneParent1
- * @param [in] GeneParent2
- * @param [in] RandomValue
- */
-void TCPU_Evolution::CrossoverUniformFlip(TGene& GeneOffspring1, TGene& GeneOffspring2,
-                                          const TGene& GeneParent1, const TGene& GeneParent2,
-                                          const unsigned int RandomValue)
-{
-
-    GeneOffspring1 =  (~RandomValue  & GeneParent1) | ( RandomValue  & GeneParent2);
-    GeneOffspring2 =  ( RandomValue  & GeneParent1) | (~RandomValue  & GeneParent2);
-    
-    
-//    if (RandomValue > UINT_MAX>>1) { // flip bits           
-//        GeneOffspring1 |=  (GeneParent2 & (1 << BitID));
-//        GeneOffspring2 |=  (GeneParent1 & (1 << BitID));                            
-//    } else {              
-//        GeneOffspring1 |=  (GeneParent1 & (1 << BitID));
-//        GeneOffspring2 |=  (GeneParent2 & (1 << BitID));                            
-//    } 
-
-}// end of CrossoverUniformFlip
-//------------------------------------------------------------------------------
-
-
-
-/**
- * Bit Flip Mutation
- * 
- * @param [in,out] GeneOffspring1
- * @param [in,out] GeneOffspring2
- * @param [in] RandomValue1
- * @param [in] RandomValue2
- * @param [in] BitID 
- * 
- */
- void TCPU_Evolution::MutationBitFlip(TGene& GeneOffspring1, TGene& GeneOffspring2,
-                                      const unsigned int RandomValue1, const unsigned int RandomValue2, const int BitID)
-{
-
- static TParameters * Params = TParameters::GetInstance();    
-  
- 
- if (RandomValue1 < Params->MutationUINTBoundary()) GeneOffspring1 ^= (1 << BitID); 
- if (RandomValue2 < Params->MutationUINTBoundary()) GeneOffspring2 ^= (1 << BitID); 
- 
- //GeneOffspring1 ^= (((unsigned int) RandomValue1 < Params->MutationUINTBoundary()) << BitID);
- //GeneOffspring2 ^= (((unsigned int) RandomValue2 < Params->MutationUINTBoundary() ) << BitID);          
-         
-    
-}// end of MutationBitFlip
-//------------------------------------------------------------------------------
-            
-/**
- * Replacement kernel
- * 
- */
-void TCPU_Evolution::Replacement()
-{
-   
-    TParameters * Params = TParameters::GetInstance();
-    
-
-    // Init Random Number Generator 
-    RNG_2x32  rng_4x32;    
-    RNG_2x32::key_type key    ={{Params->IslandIdx()}};
-    RNG_2x32::ctr_type counter={{GetSeed().seed1 ,GetSeed().seed2}};
-    RNG_2x32::ctr_type RandomValues;
-    
-    for (int ChromosomeIdx = 0; ChromosomeIdx < Params->PopulationSize(); ChromosomeIdx+=2){
         counter.incr();
-        RandomValues = rng_4x32(counter, key);
+        randomValueForMutation2 = rng_4x32(counter, key);
 
-        // Inline selection
-        unsigned int Idx1 = RandomValues.v[0] % OffspringPopulation->PopulationSize;
-        unsigned int Idx2 = RandomValues.v[1] % OffspringPopulation->PopulationSize;
+        for (int i = 0; i < 4 ; i++)
+        {
+          // mutation
+          mutationBitFlip(offspring1Genes,
+                          offspring2Genes,
+                          randomValueForMutation1.v[i],
+                          randomValueForMutation2.v[i],
+                          bitIdx + i);
+          }
+        }// mutation
 
-        //  Repalace individuals if necessary
-        if (OffspringPopulation->Fitness[Idx1] > MasterPopulation->Fitness[ChromosomeIdx]){
+        mOffspringPopulation->population[chromosomeIdx       * mParams.getChromosomeSize() + geneIdx] = offspring1Genes;
+        mOffspringPopulation->population[(chromosomeIdx + 1) * mParams.getChromosomeSize() + geneIdx] = offspring2Genes;
+      }
+    }// crossover
+    else
+    //--------------------------------------------- Clone individuals ----------------------------------------------//
+    {
+      for (int GeneIdx = 0; GeneIdx < mParams.getChromosomeSize(); GeneIdx++)
+      {
+        Gene offspring1Genes = mMasterPopulation->population[parent1Idx * mParams.getChromosomeSize() + GeneIdx];
+        Gene offspring2Genes = mMasterPopulation->population[parent2Idx * mParams.getChromosomeSize() + GeneIdx];
 
-            memcpy(&MasterPopulation->Population   [ChromosomeIdx * Params->ChromosomeSize()], 
-                   &OffspringPopulation->Population[Idx1          * Params->ChromosomeSize()],
-                    Params->ChromosomeSize() * sizeof(TGene));
+        RNG_4x32::ctr_type randomValueForMutation1;
+        RNG_4x32::ctr_type randomValueForMutation2;
 
-            MasterPopulation->Fitness[ChromosomeIdx] = OffspringPopulation->Fitness[Idx1];
-        }
+        //-------------------------------------------------- Mutation --------------------------------------------------//
+        for (int bitIdx = 0; bitIdx < mParams.getIntBlockSize(); bitIdx+=4)
+        {
+          counter.incr();
+          randomValueForMutation1 = rng_4x32(counter, key);
 
-        if (OffspringPopulation->Fitness[Idx2] > MasterPopulation->Fitness[ChromosomeIdx+1]){
+          counter.incr();
+          randomValueForMutation2 = rng_4x32(counter, key);
 
-            memcpy(&MasterPopulation->Population   [(ChromosomeIdx+1) * Params->ChromosomeSize()], 
-                   &OffspringPopulation->Population[Idx2              * Params->ChromosomeSize()],
-                    Params->ChromosomeSize() * sizeof(TGene));
-            MasterPopulation->Fitness[ChromosomeIdx+1] = OffspringPopulation->Fitness[Idx2];
+          for (int i = 0; i < 4 ; i++)
+          {
+            // mutation
+            mutationBitFlip(offspring1Genes,
+                            offspring2Genes,
+                            randomValueForMutation1.v[i],
+                            randomValueForMutation2.v[i],
+                            bitIdx + i);
+          }
+        }// one cloning
 
-        }
-    }// ChromosomeIDx
-  
-}// end of Replacement()
-//------------------------------------------------------------------------------
+        mOffspringPopulation->population[chromosomeIdx       * mParams.getChromosomeSize() + GeneIdx] = offspring1Genes;
+        mOffspringPopulation->population[(chromosomeIdx + 1) * mParams.getChromosomeSize() + GeneIdx] = offspring2Genes;
+      }// for 1 id
+    }// cloning
+
+    // Reset fitness
+    mOffspringPopulation->fitness[chromosomeIdx]     = 0.0f;
+    mOffspringPopulation->fitness[chromosomeIdx +1 ] = 0.0f;
+  }// for individuals
+}// end of geneticManipulation
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
- * Unidirectional migration
+ * Binary tournament selection.
  */
-void TCPU_Evolution::Migrate()
+unsigned int Evolution::selection(const Population * parentPopulation,
+                                  const unsigned int randomValue1,
+                                  const unsigned int randomValue2)
 {
-  
-  // Four messages running in parallel  
-  static const int NumOfMessages = 4;  
-  
+  const unsigned int idx1 = randomValue1 % (parentPopulation->populationSize);
+  const unsigned int idx2 = randomValue2 % (parentPopulation->populationSize);
+
+  return (parentPopulation->fitness[idx1] > parentPopulation->fitness[idx2]) ? idx1 : idx2;
+}// selection
+//----------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Flip bites of parents to produce offsprings.
+ */
+void Evolution::crossoverUniformFlip(Gene& offspring1,
+                                     Gene& offspring2,
+                                     const Gene& parent1,
+                                     const Gene& parent2,
+                                     const unsigned int randomValue)
+{
+  offspring1 =  (~randomValue & parent1) | ( randomValue & parent2);
+  offspring2 =  ( randomValue & parent1) | (~randomValue & parent2);
+}// end of crossoverUniformFlip
+//----------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Bit Flip Mutation.
+ */
+ void Evolution::mutationBitFlip(Gene& offspring1,
+                                 Gene& offspring2,
+                                 const unsigned int randomValue1,
+                                 const unsigned int randomValue2,
+                                 const int bitIdx)
+{
+  if (randomValue1 < mParams.getMutationUintBoundary()) offspring1 ^= (1 << bitIdx);
+  if (randomValue2 < mParams.getMutationUintBoundary()) offspring2 ^= (1 << bitIdx);
+}// end of mutationBitFlip
+//----------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Replacement kernel.
+ */
+ void Evolution::replacement()
+{
+  // Init Random Number Generator
+  RNG_2x32  rng_4x32;
+  RNG_2x32::key_type key     = {{uint32_t(mParams.getIslandIdx())}};
+  RNG_2x32::ctr_type counter = {{getSeed().seed1 ,getSeed().seed2}};
+  RNG_2x32::ctr_type randomValues;
+
+  for (int chromosomeIdx = 0; chromosomeIdx < mParams.getOffspringPopulationSize(); chromosomeIdx += 2)
+  {
+    counter.incr();
+    randomValues = rng_4x32(counter, key);
+
+    // Inline selection
+    const unsigned int idx1 = randomValues.v[0] % mMasterPopulation->populationSize;
+    const unsigned int idx2 = randomValues.v[1] % mMasterPopulation->populationSize;
+
+    //  Replace individuals if necessary
+    if (mOffspringPopulation->fitness[chromosomeIdx] > mMasterPopulation->fitness[idx1])
+    {
+      memcpy(&mMasterPopulation->population   [idx1          * mParams.getChromosomeSize()],
+             &mOffspringPopulation->population[chromosomeIdx * mParams.getChromosomeSize()],
+             mParams.getChromosomeSize() * sizeof(Gene));
+
+      mMasterPopulation->fitness[idx1] = mOffspringPopulation->fitness[chromosomeIdx];
+    }
+
+    if (mOffspringPopulation->fitness[chromosomeIdx + 1] > mMasterPopulation->fitness[idx2])
+    {
+      memcpy(&mMasterPopulation->population   [idx2                * mParams.getChromosomeSize()],
+             &mOffspringPopulation->population[(chromosomeIdx + 1) * mParams.getChromosomeSize()],
+             mParams.getChromosomeSize() * sizeof(Gene));
+      mMasterPopulation->fitness[idx2] = mOffspringPopulation->fitness[chromosomeIdx + 1];
+
+    }
+  }// chromosomeIdx
+}// end of replacement
+/*void Evolution::replacement()
+{
+  // Init Random Number Generator
+  RNG_2x32  rng_4x32;
+  RNG_2x32::key_type key     = {{uint32_t(mParams.getIslandIdx())}};
+  RNG_2x32::ctr_type counter = {{getSeed().seed1 ,getSeed().seed2}};
+  RNG_2x32::ctr_type randomValues;
+
+  for (int chromosomeIdx = 0; chromosomeIdx < mParams.getPopulationSize(); chromosomeIdx += 2)
+  {
+    counter.incr();
+    randomValues = rng_4x32(counter, key);
+
+    // Inline selection
+    const unsigned int idx1 = randomValues.v[0] % mOffspringPopulation->populationSize;
+    const unsigned int idx2 = randomValues.v[1] % mOffspringPopulation->populationSize;
+
+    //  Replace individuals if necessary
+    if (mOffspringPopulation->fitness[idx1] > mMasterPopulation->fitness[chromosomeIdx])
+    {
+      memcpy(&mMasterPopulation->population   [chromosomeIdx * mParams.getChromosomeSize()],
+             &mOffspringPopulation->population[idx1          * mParams.getChromosomeSize()],
+             mParams.getChromosomeSize() * sizeof(Gene));
+
+      mMasterPopulation->fitness[chromosomeIdx] = mOffspringPopulation->fitness[idx1];
+    }
+
+    if (mOffspringPopulation->fitness[idx2] > mMasterPopulation->fitness[chromosomeIdx + 1])
+    {
+      memcpy(&mMasterPopulation->population   [(chromosomeIdx + 1) * mParams.getChromosomeSize()],
+             &mOffspringPopulation->population[idx2                * mParams.getChromosomeSize()],
+             mParams.getChromosomeSize() * sizeof(Gene));
+      mMasterPopulation->fitness[chromosomeIdx + 1] = mOffspringPopulation->fitness[idx2];
+
+    }
+  }// chromosomeIdx
+}// end of replacement*/
+//----------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Unidirectional migration.
+ */
+void Evolution::migrate()
+{
+  // Four messages running in parallel
+  constexpr int NumOfMessages = 4;
+
   // MPI status and request
   MPI_Status  status [NumOfMessages];
   MPI_Request request[NumOfMessages];
 
-  int Target;
-  int Source;
- 
-  Target = (Params->IslandIdx() + 1) % Params->IslandCount(); // Send to the right
-  if (Params->IslandIdx() == 0) Source = Params->IslandCount()-1;
-  else Source = Params->IslandIdx() - 1;              // Send to the left
-  
-  // receive new fitnesses and chromosomes  
-  MPI_Irecv(EmigrantsToReceive->Fitness   ,Params->EmigrantCount()                           , MPI_FLOAT   , Source, MPI_TAG_DATA_RIGHT, MPI_COMM_WORLD, &request[2]); 
-  MPI_Irecv(EmigrantsToReceive->Population,Params->EmigrantCount() * Params->ChromosomeSize(), MPI_UNSIGNED, Source, MPI_TAG_DATA_RIGHT, MPI_COMM_WORLD, &request[3]); 
-  
+  // Get source and target
+  const int target = (mParams.getIslandIdx() + 1) % mParams.getIslandCount();
+  const int source = (mParams.getIslandIdx() == 0) ? mParams.getIslandCount() - 1 : mParams.getIslandIdx() - 1;
 
-  PackEmigrantsToSend();
-  
+  // receive new fitnesses and chromosomes
+  MPI_Irecv(mEmigrantsToReceive->fitness,
+            mParams.getEmigrantCount(),
+            MPI_FLOAT,
+            source,
+            kMpiTagDataRight,
+            MPI_COMM_WORLD,
+            &request[2]);
+  MPI_Irecv(mEmigrantsToReceive->population,
+            mParams.getEmigrantCount() * mParams.getChromosomeSize(),
+            MPI_UNSIGNED,
+            source,
+            kMpiTagDataRight,
+            MPI_COMM_WORLD,
+            &request[3]);
+
+  packEmigrantsToSend();
+
   // dispatch new emigrants
-  MPI_Isend(EmigrantsToSend->Fitness      ,Params->EmigrantCount()                           , MPI_FLOAT   , Target, MPI_TAG_DATA_RIGHT, MPI_COMM_WORLD, &request[0]);         
-  MPI_Isend(EmigrantsToSend->Population   ,Params->EmigrantCount() * Params->ChromosomeSize(), MPI_UNSIGNED, Target, MPI_TAG_DATA_RIGHT, MPI_COMM_WORLD, &request[1]);         
+  MPI_Isend(mEmigrantsToSend->fitness,
+            mParams.getEmigrantCount(),
+            MPI_FLOAT,
+            target,
+            kMpiTagDataRight,
+            MPI_COMM_WORLD,
+            &request[0]);
+
+  MPI_Isend(mEmigrantsToSend->population,
+            mParams.getEmigrantCount() * mParams.getChromosomeSize(),
+            MPI_UNSIGNED,
+            target,
+            kMpiTagDataRight,
+            MPI_COMM_WORLD,
+            &request[1]);
 
   MPI_Waitall(NumOfMessages, request, status);
-  
-  UnpackReceivedEmigrants();
-    
-  
-}// end of Migrate
-//------------------------------------------------------------------------------
 
+  unpackReceivedEmigrants();
+}// end of migrate
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
  * Create Population to send
- * 
  */
-void TCPU_Evolution::PackEmigrantsToSend()
+void Evolution::packEmigrantsToSend()
 {
+  mStatistics->setBestLocalIndividualAndMaxFintess(mMasterPopulation);
 
-    CPUStatistics->SetBestLocalIndividualAndMaxFintess(MasterPopulation);
-    
-    //-- Best individual --//
-    EmigrantsToSend->Fitness[0] = CPUStatistics->GetMaxFitness();
-    memcpy(&EmigrantsToSend->Population[0], 
-           &MasterPopulation->Population[CPUStatistics->GetBestLocalSolutionIdx() * Params->ChromosomeSize()], 
-            Params->ChromosomeSize() * sizeof(TGene));
-    
-    
-    //-- other emigrants --//
-     RNG_4x32  rng_4x32;    
-     RNG_4x32::key_type key    ={{Params->IslandIdx(),0xcaffe123}};
-     RNG_4x32::ctr_type counter={{0, GetSeed().seed1, GetSeed().seed2 ,0xbeeff00d}};
-     RNG_4x32::ctr_type RandomValues;
-    
-    // Pack all emigrants into a buffer
-    for (int EmigrantIdx = 1; EmigrantIdx < Params->EmigrantCount(); EmigrantIdx+=2){
-        
-       counter.incr();
-       RandomValues = rng_4x32(counter, key);
+  // Best individual
+  mEmigrantsToSend->fitness[0] = mStatistics->getMaxFitness();
+  memcpy(&mEmigrantsToSend->population[0],
+         &mMasterPopulation->population[mStatistics->getBestLocalSolutionIdx() * mParams.getChromosomeSize()],
+         mParams.getChromosomeSize() * sizeof(Gene));
 
-       unsigned int Parent1_Idx = Selection(MasterPopulation, RandomValues.v[0], RandomValues.v[1]);                        
-       unsigned int Parent2_Idx = Selection(MasterPopulation, RandomValues.v[2], RandomValues.v[3]); 
-       
-       EmigrantsToSend->Fitness[EmigrantIdx    ] = MasterPopulation->Fitness[Parent1_Idx];
-       EmigrantsToSend->Fitness[EmigrantIdx + 1] = MasterPopulation->Fitness[Parent2_Idx];
-       
-       memcpy(&EmigrantsToSend->Population [EmigrantIdx * Params->ChromosomeSize()], 
-              &MasterPopulation->Population[Parent1_Idx * Params->ChromosomeSize()], 
-               Params->ChromosomeSize() * sizeof(TGene));
-       
-       memcpy(&EmigrantsToSend->Population [(EmigrantIdx + 1) * Params->ChromosomeSize()], 
-              &MasterPopulation->Population[Parent2_Idx * Params->ChromosomeSize()], 
-              Params->ChromosomeSize() * sizeof(TGene));
-       
-    }
-    
-}// end of PackEmigrantsToSend
-//------------------------------------------------------------------------------
-    
+
+  // other emigrants
+  RNG_4x32  rng_4x32;
+  RNG_4x32::key_type key     = {{uint32_t(mParams.getIslandIdx()), 0xcaffe123}};
+  RNG_4x32::ctr_type counter = {{0, getSeed().seed1, getSeed().seed2, 0xbeeff00d}};
+  RNG_4x32::ctr_type randomValues;
+
+  // Pack all emigrants into a buffer
+  for (int emigrantIdx = 1; emigrantIdx < mParams.getEmigrantCount(); emigrantIdx += 2)
+  {
+    counter.incr();
+    randomValues = rng_4x32(counter, key);
+
+    unsigned int parent1Idx = selection(mMasterPopulation, randomValues.v[0], randomValues.v[1]);
+    unsigned int parent2Idx = selection(mMasterPopulation, randomValues.v[2], randomValues.v[3]);
+
+    mEmigrantsToSend->fitness[emigrantIdx    ] = mMasterPopulation->fitness[parent1Idx];
+    mEmigrantsToSend->fitness[emigrantIdx + 1] = mMasterPopulation->fitness[parent2Idx];
+
+    memcpy(&mEmigrantsToSend->population [emigrantIdx * mParams.getChromosomeSize()],
+           &mMasterPopulation->population[parent1Idx * mParams.getChromosomeSize()],
+           mParams.getChromosomeSize() * sizeof(Gene));
+
+    memcpy(&mEmigrantsToSend->population [(emigrantIdx + 1) * mParams.getChromosomeSize()],
+           &mMasterPopulation->population[parent2Idx * mParams.getChromosomeSize()],
+           mParams.getChromosomeSize() * sizeof(Gene));
+  }
+}// end of packEmigrantsToSend
+//----------------------------------------------------------------------------------------------------------------------
 
 /**
- * Include Received population 
- * 
+ * Include Received population.
  */
-void TCPU_Evolution::UnpackReceivedEmigrants()
-{    
-    //-- other emigrants --//
-    RNG_4x32  rng_4x32;    
-    RNG_4x32::key_type key    ={{Params->IslandIdx(),0xaacc8844}};
-    RNG_4x32::ctr_type counter={{0, GetSeed().seed1, GetSeed().seed1 ,0xfeeff00d}};
-    RNG_4x32::ctr_type RandomValues;
-    
-    // unpack emigrants    
-    for (int EmigrantIdx = 0; EmigrantIdx < Params->EmigrantCount(); EmigrantIdx++){
-        
-      counter.incr();
-      RandomValues = rng_4x32(counter, key);
-      unsigned int ParentIdx = Selection(MasterPopulation, RandomValues.v[0], RandomValues.v[1]); 
-       
-      if (EmigrantsToReceive->Fitness[EmigrantIdx] > MasterPopulation->Fitness[ParentIdx]){
-           MasterPopulation->Fitness[ParentIdx] = EmigrantsToReceive->Fitness[EmigrantIdx];
-           memcpy(&MasterPopulation  ->Population[ParentIdx   * Params->ChromosomeSize()],
-                  &EmigrantsToReceive->Population[EmigrantIdx * Params->ChromosomeSize()],                   
-                   Params->ChromosomeSize() * sizeof(TGene));           
-       }
-    }  
-       
-     
-}// end of UnpackReceivedEmigrants
-//------------------------------------------------------------------------------
+void Evolution::unpackReceivedEmigrants()
+{
+  //-- other emigrants --//
+  RNG_4x32  rng_4x32;
+  RNG_4x32::key_type key     = {{uint32_t(mParams.getIslandIdx()), 0xaacc8844}};
+  RNG_4x32::ctr_type counter = {{0, getSeed().seed1, getSeed().seed1 ,0xfeeff00d}};
+  RNG_4x32::ctr_type randomValues;
+
+  // unpack emigrants
+  for (int emigrantIdx = 0; emigrantIdx < mParams.getEmigrantCount(); emigrantIdx++)
+  {
+
+    counter.incr();
+    randomValues = rng_4x32(counter, key);
+    unsigned int parentIdx = selection(mMasterPopulation, randomValues.v[0], randomValues.v[1]);
+
+    if (mEmigrantsToReceive->fitness[emigrantIdx] > mMasterPopulation->fitness[parentIdx])
+    {
+      mMasterPopulation->fitness[parentIdx] = mEmigrantsToReceive->fitness[emigrantIdx];
+      memcpy(&mMasterPopulation  ->population[parentIdx   * mParams.getChromosomeSize()],
+             &mEmigrantsToReceive->population[emigrantIdx * mParams.getChromosomeSize()],
+             mParams.getChromosomeSize() * sizeof(Gene));
+    }
+  }
+}// end of unpackReceivedEmigrants
+//----------------------------------------------------------------------------------------------------------------------

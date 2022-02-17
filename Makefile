@@ -30,7 +30,7 @@
 # Environment
 CC=mpicc
 CXX=mpic++
-CXXFLAGS=-m64 -O3 -msse4.1 -ffast-math -Wall
+CXXFLAGS=-m64 -O3 -march=native -mtune=native -ffast-math -Wall
 TARGET= mpi_ga_knapsack
 
 all:		$(TARGET)	
