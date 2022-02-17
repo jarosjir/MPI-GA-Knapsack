@@ -1,41 +1,31 @@
 /**
- * @file	main.cpp 
- * @author	Jiri Jaros \n
- *   	 	Brno University of Technology \n
- *              Faculty of Information Technology \n
- *              
- *              and			\n
- * 
- *              The Australian National University	\n
- *              ANU College of Engineering & Computer Science	\n
+ * @file        main.cpp
+ * @author      Jiri Jaros
+ *              Brno University of Technology
+ *              Faculty of Information Technology
  *
- * 		jarosjir@fit.vutbr.cz
- * 	        www.fit.vutbr.cz/~jarosjir
- * 
- * @brief 	Efficient MPI implementation of the Island-Based, \n
+ *              and
+ *              The Australian National University
+ *              ANU College of Engineering & Computer Science
+ *
+ *              jarosjir@fit.vutbr.cz
+ *              www.fit.vutbr.cz/~jarosjir
+ *
+ * @brief       Efficient MPI implementation of the Island-Based,
  *            	Genetic Algorithm solving the Knapsack problem.
  *
- * @version	1.0
- * @date	06 June      2012, 00:00 (created)
-		20 September 2012, 13:00 (revised)
-
- * @mainpage 	MPI-GA-knapsack
- * 
- * @section     License 
- * 		This source code is distribute under OpenSource GNU GPL license
- *                
- *              If using this code, please consider citation of related papers
- *              at http://www.fit.vutbr.cz/~jarosjir/pubs.php        
- *      
+ * @version    	1.1
+ * @date	      06 June      2012, 00:00 (created)
+ *              15 February  2022, 10:58 (revised)
  *
+ * @mainpage 	MPI-GA-knapsack
  *
  * @section	Usage
-		Efficient MPI implementation of the Island-Based, 
- *            	Genetic Algorithm solving the Knapsack problem.
- * 		
- * \verbatim	
+ *		Efficient MPI implementation of the Island-Based, Genetic Algorithm solving the Knapsack problem.
+ *
+ * \verbatim
  ----------------------------------------------------------------
-Parameters: 
+Parameters:
   -p <integer value>	: Population size       (default 128)
   -g <integer value>	: Number of generations (default 100)
 
@@ -50,55 +40,52 @@ Parameters:
   -b 			: Print best individual
   -f <file_name>	: Benchmark_file_name	(default knapsack_data.txt)
 \endverbatim
+ *
+ * @copyright   Copyright (C) 2012 - 2022 Jiri Jaros.
+ *
+ * This source code is distribute under OpenSouce GNU GPL license.
+ * If using this code, please consider citation of related papers
+ * at http://www.fit.vutbr.cz/~jarosjir/pubs.php
+ *
  */
 
-
-
-
-#include <cstdlib>
-#include <stdio.h>
-#include <iostream>
 #include <mpi.h>
 
-#include "CPU_Evolution.h"
+#include "Evolution.h"
 #include "Parameters.h"
 
 
-using namespace std;
-
-
-
-/** 
- *  The main function
- * @param argc
- * @param argv
+/**
+ * The main function.
+ * @param [in] argc - Number of command line arguments.
+ * @param [in] argv - Command line arguments.
  * @return error code
  */
 int main(int argc, char **argv)
 {
-        
-      // MPI initialization
-    MPI_Init(&argc, &argv);
+  // MPI initialization
+  MPI_Init(&argc, &argv);
 
-       // Create CPU evolution class
-    TCPU_Evolution CPU_Evolution(argc,argv);    
-    
-    double AlgorithmStartTime;
-    AlgorithmStartTime = MPI_Wtime();
-    
-      // Run evolution
-    CPU_Evolution.Run();
-    
-    
-    double AlgorithmStopTime = MPI_Wtime();
-    
-      // Master process prints execution time
-    if (CPU_Evolution.IsMaster()) printf("Execution time: %0.3f s.\n",  AlgorithmStopTime - AlgorithmStartTime);    
-                                  
-      // MPI finalization
-    MPI_Finalize();
+  // Create evolution class on CPU.
+  Evolution evolution(argc,argv);
 
-    return EXIT_SUCCESS;;
+  double algorithmStartTime = MPI_Wtime();
+
+  // Run evolution
+  evolution.run();
+
+  double algorithmStopTime = MPI_Wtime();
+
+  // Master process prints execution time
+  if (evolution.isMaster())
+  {
+    printf("Execution time: %0.3f s.\n",  algorithmStopTime - algorithmStartTime);
+  }
+
+  // MPI finalization
+  MPI_Finalize();
+
+  return EXIT_SUCCESS;;
 }// end of main
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 
